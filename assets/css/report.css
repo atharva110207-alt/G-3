@@ -1,0 +1,56 @@
+/* Print & Termwork Submission Report CSS */
+
+.report-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.report-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.report-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.signature-block {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2rem;
+}
+
+.signature-line {
+  border-top: 1px solid var(--text-primary);
+  width: 200px;
+  text-align: center;
+  padding-top: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+@media print {
+  .sidebar, .navbar, .btn, .no-print {
+    display: none !important;
+  }
+  .content-wrapper {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
