@@ -1,6 +1,6 @@
 <?php
-// Practical Assessment & Laboratory Performance Management System
-// Authentication & Role-Based Authorization Middleware
+// Practical Assessment System - Authentication & Role-Based Authorization
+// Zeal College of Engineering & Research
 
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/config.php';
@@ -31,7 +31,7 @@ function require_role($allowed_roles) {
     
     if (!in_array($current_role, $allowed_roles)) {
         set_flash('error', 'Unauthorized access! You do not have permission to view this page.');
-        header('Location: ' . BASE_URL . 'index.php');
+        header('Location: ' . get_role_dashboard($current_role));
         exit();
     }
 }
@@ -47,7 +47,7 @@ function get_role_dashboard($role) {
         case 'admin':
             return BASE_URL . 'modules/dashboard/admin_dashboard.php';
         case 'hod':
-            return BASE_URL . 'modules/dashboard/admin_dashboard.php'; // or admin dashboard with HOD view
+            return BASE_URL . 'modules/dashboard/hod_dashboard.php';
         case 'gfm':
             return BASE_URL . 'modules/dashboard/gfm_dashboarrd.php';
         case 'faculty':

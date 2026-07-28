@@ -1,17 +1,21 @@
 <?php
-// Practical Assessment & Laboratory Performance Management System
-// Global Configuration & Constants
+// Practical Assessment System - Configuration & Constants
+// Zeal College of Engineering & Research - Department of Electronics & Computer Engineering
 
 if (!defined('APP_NAME')) {
-    define('APP_NAME', 'Practical Assessment & Lab Performance Management System');
+    define('APP_NAME', 'Practical Assessment System');
 }
 
 if (!defined('COLLEGE_NAME')) {
-    define('COLLEGE_NAME', 'Zalawad College of Engineering & Research (ZCOER)');
+    define('COLLEGE_NAME', 'ZEAL COLLEGE OF ENGINEERING & RESEARCH');
 }
 
-if (!defined('ACADEMIC_YEAR')) {
-    define('ACADEMIC_YEAR', '2025-2026');
+if (!defined('DEPARTMENT_NAME')) {
+    define('DEPARTMENT_NAME', 'Department of Electronics & Computer Engineering');
+}
+
+if (!defined('DEFAULT_ACADEMIC_YEAR')) {
+    define('DEFAULT_ACADEMIC_YEAR', '2026-2027');
 }
 
 if (!defined('BASE_URL')) {
@@ -22,7 +26,11 @@ if (!defined('BASE_URL')) {
     define('BASE_URL', $base_url);
 }
 
-// Evaluation Criteria Constants & Descriptions
+// Available Academic Years & Classes
+$ACADEMIC_YEARS = ['2026-2027', '2025-2026'];
+$CLASSES = ['FY', 'SY', 'TY', 'BY'];
+
+// Evaluation Criteria Constants & Descriptions (Total: 25 Marks)
 $EVALUATION_CRITERIA = [
     'regularity' => [
         'title' => 'Regularity (Max 5 Marks)',
@@ -63,4 +71,26 @@ $EVALUATION_CRITERIA = [
         ]
     ]
 ];
+
+/**
+ * Helper to display role display label with "Subject Faculty" nomenclature
+ */
+function get_role_label($role) {
+    switch (strtolower($role)) {
+        case 'admin':
+            return 'System Admin';
+        case 'hod':
+            return 'HOD';
+        case 'gfm':
+            return 'GFM';
+        case 'faculty':
+            return 'Subject Faculty';
+        case 'student':
+            return 'Student';
+        case 'parent':
+            return 'Parent';
+        default:
+            return ucfirst($role);
+    }
+}
 ?>

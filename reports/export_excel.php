@@ -1,52 +1,105 @@
 <?php
-// Export Consolidated Marksheet to Excel (CSV Stream)
+// Practical Assessment System - Export Marksheet & Attendance to CSV (.excel)
+// Zeal College of Engineering & Research
 
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 require_login();
 
 $division = sanitize($_GET['division'] ?? 'Division C');
+$subject = sanitize($_GET['subject'] ?? 'Microprocessors & Microcontrollers');
+$class = $_SESSION['class_filter'] ?? 'TY';
 
+// Fetch Students
+$st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
+$st_stmt = execute_prepared($conn, $st_sql, "ss", [$class, $division]);
+$students = [];
+if ($st_stmt) {
+    $res = mysqli_stmt_get_result($st_stmt);
+    while ($r = mysqli_fetch_assoc($res)) {
+        $students[] = $r;
+    }
+    mysqli_stmt_close($st_stmt);
+}
+
+// Fetch Experiments
+$exp_sql = "SELECT id, exp_no, title FROM practicals WHERE subject_name = ? AND division = ? ORDER BY exp_no ASC";
+$exp_stmt = execute_prepared($conn, $exp_sql, "ss", [$subject, $division]);
+$experiments = [];
+if ($exp_stmt) {
+    $res = mysqli_stmt_get_result($exp_stmt);
+    while ($ex = mysqli_fetch_assoc($res)) {
+        $experiments[] = $ex;
+    }
+    mysqli_stmt_close($exp_stmt);
+}
+
+// Fetch Matrix
+$matrix = [];
+if (!empty($experiments)) {
+    $ass_sql = "SELECT a.student_id, a.practical_id, a.total_score FROM assessment a JOIN practicals p ON a.practical_id = p.id WHERE p.subject_name = ?";
+    $ass_stmt = execute_prepared($conn, $ass_sql, "s", [$subject]);
+    if ($ass_stmt) {
+        $res = mysqli_stmt_get_result($ass_stmt);
+        while ($ar = mysqli_fetch_assoc($res)) {
+            $matrix[$ar['student_id']][$ar['practical_id']] = $ar['total_score'];
+        }
+        mysqli_stmt_close($ass_stmt);
+    }
+}
+
+// Output headers for CSV download
+$filename = "Marksheet_" . preg_replace('/[^A-Za-z0-9]/', '_', $subject) . "_" . $division . ".csv";
 header('Content-Type: text/csv; charset=utf-8');
-header('Content-Disposition: attachment; filename=TermWork_Marksheet_' . urlencode($division) . '_' . date('Y-m-d') . '.csv');
+header('Content-Disposition: attachment; filename=' . $filename);
 
 $output = fopen('php://output', 'w');
 
-// Header row
-fputcsv($output, ['Sr No', 'Roll Number', 'Student Name', 'Division', 'Experiments Checked', 'Sum Obtained', 'Average (out of 25)', 'Term-Work Score (out of 50)']);
+// Title Headers
+fputcsv($output, [COLLEGE_NAME]);
+fputcsv($output, [DEPARTMENT_NAME, APP_NAME]);
+fputcsv($output, ['Subject: ' . $subject, 'Division: ' . $division, 'Generated On: ' . date('d M Y')]);
+fputcsv($output, []); // Empty row
 
-$sql = "SELECT u.student_roll_no, u.full_name, u.division,
-        COUNT(ass.id) as exp_evaluated,
-        SUM(ass.total_score) as sum_obtained,
-        AVG(ass.total_score) as avg_score_25
-        FROM users u 
-        LEFT JOIN assessment ass ON ass.student_id = u.id
-        WHERE u.role = 'student' AND u.division = ?
-        GROUP BY u.id
-        ORDER BY u.student_roll_no ASC";
+// Table Column Headers
+$headers = ['Roll Number', 'Student Name', 'ZPRN', 'Class', 'Division'];
+foreach ($experiments as $ex) {
+    $headers[] = 'Exp #' . $ex['exp_no'];
+}
+$headers[] = 'Total Score';
+$headers[] = 'Normalized (25)';
+fputcsv($output, $headers);
 
-$stmt = execute_prepared($conn, $sql, "s", [$division]);
-if ($stmt) {
-    $res = mysqli_stmt_get_result($stmt);
-    $sr = 1;
-    while ($row = mysqli_fetch_assoc($res)) {
-        $avg_25 = $row['avg_score_25'] !== null ? round($row['avg_score_25'], 2) : 0;
-        $norm_50 = round($avg_25 * 2, 2);
+// Rows
+foreach ($students as $st) {
+    $st_id = $st['id'];
+    $row_total = 0;
+    $row_max = count($experiments) * 25;
 
-        fputcsv($output, [
-            $sr++,
-            $row['student_roll_no'],
-            $row['full_name'],
-            $row['division'],
-            $row['exp_evaluated'],
-            $row['sum_obtained'] ?? 0,
-            $avg_25,
-            $norm_50
-        ]);
+    $row = [
+        $st['student_roll_no'],
+        $st['full_name'],
+        $st['zprn'] ?: '-',
+        $st['class'],
+        $st['division']
+    ];
+
+    foreach ($experiments as $ex) {
+        $sc = $matrix[$st_id][$ex['id']] ?? null;
+        if ($sc !== null) {
+            $row_total += $sc;
+            $row[] = $sc;
+        } else {
+            $row[] = '-';
+        }
     }
-    mysqli_stmt_close($stmt);
+
+    $row[] = $row_total . ' / ' . ($row_max ?: 25);
+    $row[] = normalize_termwork_marks($row_total, $row_max, 25) . ' / 25';
+    fputcsv($output, $row);
 }
 
 fclose($output);

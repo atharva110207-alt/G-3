@@ -1,8 +1,7 @@
 <?php
-// Admin Management Redirect
-
-require_once __DIR__ . '/../../config/auth.php';
-require_login();
-header('Location: ../../admin/manage_user.php?role=admin');
+// Practical Assessment System - User Management Redirects
+require_once __DIR__ . '/../../includes/session.php';
+require_once __DIR__ . '/../../config/config.php';
+header('Location: ' . BASE_URL . 'admin/manage_user.php?role=admin');
 exit();
 ?>

@@ -1,6 +1,6 @@
 <?php
-// Practical Assessment & Laboratory Performance Management System
-// Database Connection Configuration (OOP & Prepared Statements Helper)
+// Practical Assessment System - Database Connection & Prepared Statements Helper
+// Zeal College of Engineering & Research
 
 $host = "localhost";
 $username = "root";
@@ -17,12 +17,11 @@ if (!$conn) {
 // Select database, or create database if not existing
 $db_selected = mysqli_select_db($conn, $database);
 if (!$db_selected) {
-    // Attempt to create database automatically
+    // Create database automatically if missing
     $create_db_sql = "CREATE DATABASE IF NOT EXISTS `$database` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;";
     if (mysqli_query($conn, $create_db_sql)) {
         mysqli_select_db($conn, $database);
         
-        // Read and execute database.sql if file exists
         $sql_file = __DIR__ . '/../database.sql';
         if (file_exists($sql_file)) {
             $sql_contents = file_get_contents($sql_file);
@@ -38,7 +37,7 @@ if (!$db_selected) {
 mysqli_set_charset($conn, "utf8mb4");
 
 /**
- * Execute a parameterized prepared statement safely.
+ * Execute a parameterized prepared statement safely using MySQLi.
  *
  * @param mysqli $conn
  * @param string $sql
@@ -49,7 +48,7 @@ mysqli_set_charset($conn, "utf8mb4");
 function execute_prepared($conn, $sql, $types = "", $params = []) {
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
-        error_log("Prepare failed: " . mysqli_error($conn));
+        error_log("Prepare failed: " . mysqli_error($conn) . " SQL: " . $sql);
         return false;
     }
     

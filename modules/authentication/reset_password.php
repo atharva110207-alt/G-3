@@ -1,51 +1,83 @@
 <?php
-// Reset Password Handler
+// Practical Assessment System - Reset Password Module
+// Zeal College of Engineering & Research
 
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../includes/functions.php';
+$page_title = "Reset Password";
+require_once __DIR__ . '/../../includes/header.php';
 
-$msg = '';
+$error = '';
+$success = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = sanitize($_POST['email'] ?? '');
-    $new_pass = $_POST['new_password'] ?? '';
+    $current_pass = trim($_POST['current_password'] ?? '');
+    $new_pass = trim($_POST['new_password'] ?? '');
+    $confirm_pass = trim($_POST['confirm_password'] ?? '');
     
-    if ($email && $new_pass) {
-        $sql = "UPDATE users SET password = ? WHERE email = ?";
-        $stmt = execute_prepared($conn, $sql, "ss", [$new_pass, $email]);
+    if (empty($current_pass) || empty($new_pass) || empty($confirm_pass)) {
+        $error = "All password fields are required.";
+    } else if ($new_pass !== $confirm_pass) {
+        $error = "New password and Confirm password do not match.";
+    } else {
+        // Verify existing password
+        $sql = "SELECT password FROM users WHERE id = ?";
+        $stmt = execute_prepared($conn, $sql, "i", [$user['id']]);
         if ($stmt) {
+            $res = mysqli_stmt_get_result($stmt);
+            $user_db = mysqli_fetch_assoc($res);
             mysqli_stmt_close($stmt);
-            set_flash('success', 'Password updated successfully! Please log in.');
-            header('Location: login.php');
-            exit();
+            
+            if ($user_db && $user_db['password'] === $current_pass) {
+                // Update password (PLAIN TEXT)
+                $update_sql = "UPDATE users SET password = ? WHERE id = ?";
+                $up_stmt = execute_prepared($conn, $update_sql, "si", [$new_pass, $user['id']]);
+                if ($up_stmt) {
+                    mysqli_stmt_close($up_stmt);
+                    log_audit($conn, $user['id'], $user['role'], 'Reset Password', 'authentication', 'Updated user password successfully.');
+                    $success = "Your password has been reset successfully!";
+                } else {
+                    $error = "Failed to update password in database.";
+                }
+            } else {
+                $error = "Incorrect current password.";
+            }
         }
     }
 }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Set New Password - <?php echo APP_NAME; ?></title>
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/style.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/login.css">
-</head>
-<body class="login-body">
-    <div class="login-card">
-        <div class="login-header">
-            <h1 class="login-title">Set New Password</h1>
-        </div>
-        <form action="" method="POST">
-            <div class="form-group">
-                <label class="form-label">Email Address</label>
-                <input type="email" name="email" class="form-control" required placeholder="Registered email">
-            </div>
-            <div class="form-group">
-                <label class="form-label">New Password</label>
-                <input type="password" name="new_password" class="form-control" required placeholder="Enter new password">
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Update Password</button>
-        </form>
+
+<div class="card" style="max-width: 600px; margin: 2rem auto;">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-key text-primary me-2"></i> Reset Account Password</h3>
+  </div>
+
+  <?php if (!empty($error)): ?>
+    <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i> <?php echo sanitize($error); ?></div>
+  <?php endif; ?>
+
+  <?php if (!empty($success)): ?>
+    <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i> <?php echo sanitize($success); ?></div>
+  <?php endif; ?>
+
+  <form method="POST" action="">
+    <div class="form-group">
+      <label for="current_password" class="form-label">Current Password</label>
+      <input type="password" id="current_password" name="current_password" class="form-control" required placeholder="Enter current password">
     </div>
-</body>
-</html>
+
+    <div class="form-group">
+      <label for="new_password" class="form-label">New Password</label>
+      <input type="password" id="new_password" name="new_password" class="form-control" required placeholder="Enter new password">
+    </div>
+
+    <div class="form-group">
+      <label for="confirm_password" class="form-label">Confirm New Password</label>
+      <input type="password" id="confirm_password" name="confirm_password" class="form-control" required placeholder="Confirm new password">
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-save me-2"></i> Update Password
+    </button>
+  </form>
+</div>
+
+<?php include __DIR__ . '/../../includes/footer.php'; ?>

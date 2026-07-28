@@ -1,66 +1,222 @@
-/* Login Page Layout & Styling */
+/* Practical Assessment System - Login & Auth Page Styling
+   Zeal College of Engineering & Research */
 
-.login-body {
+.login-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--bg-sidebar) 0%, var(--primary-color) 100%);
+  background: radial-gradient(circle at top, #1E293B 0%, #0F172A 100%);
   padding: 1.5rem;
 }
 
-.login-card {
-  background-color: var(--bg-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+.login-modal {
   width: 100%;
-  max-width: 440px;
-  padding: 2.5rem 2rem;
-  border: 1px solid var(--border-color);
+  max-width: 480px;
+  background: rgba(30, 41, 59, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2.25rem 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.15);
+  animation: modalFadeIn 0.4s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
-.login-logo {
+.zeal-logo {
   width: 64px;
   height: 64px;
-  background-color: var(--primary-color);
-  color: #ffffff;
-  border-radius: var(--radius-md);
-  display: inline-flex;
+  margin: 0 auto 0.75rem auto;
+  background: linear-gradient(135deg, #4F46E5, #6366F1);
+  border-radius: 16px;
+  display: flex;
   align-items: center;
   justify-content: center;
+  color: #ffffff;
   font-size: 2rem;
-  margin-bottom: 1rem;
-  box-shadow: var(--shadow-md);
+  font-weight: 900;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
 }
 
-.login-title {
-  font-size: 1.5rem;
+.institution-title {
+  font-size: 0.85rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #f8fafc;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.login-subtitle {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  margin-top: 0.25rem;
+.department-title {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
 }
 
-.demo-credentials-box {
-  background-color: var(--bg-primary);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 0.875rem;
-  margin-top: 1.5rem;
-  font-size: 0.8125rem;
-  color: var(--text-secondary);
+.system-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffffff;
 }
 
-.demo-credentials-box summary {
-  font-weight: 700;
+/* User Role Selection Grid */
+.role-grid-container {
+  margin-bottom: 1.25rem;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.role-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 0.65rem 0.4rem;
+  text-align: center;
   cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.role-card:hover {
+  transform: translateY(-2px);
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.role-icon {
+  font-size: 1.35rem;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.role-title {
+  font-size: 0.725rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: block;
+  white-space: nowrap;
+}
+
+/* DISTINCT DYNAMIC ROLE GLOW SHADOW OUTLINES */
+.role-card[data-role="student"].selected {
+  border: 2px solid #3B82F6 !important;
+  box-shadow: 0 0 15px #3B82F6 !important;
+  background: rgba(59, 130, 246, 0.18) !important;
+}
+
+.role-card[data-role="faculty"].selected {
+  border: 2px solid #8B5CF6 !important;
+  box-shadow: 0 0 15px #8B5CF6 !important;
+  background: rgba(139, 92, 246, 0.18) !important;
+}
+
+.role-card[data-role="admin"].selected {
+  border: 2px solid #EF4444 !important;
+  box-shadow: 0 0 15px #EF4444 !important;
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
+.role-card[data-role="hod"].selected {
+  border: 2px solid #10B981 !important;
+  box-shadow: 0 0 15px #10B981 !important;
+  background: rgba(16, 185, 129, 0.18) !important;
+}
+
+.role-card[data-role="gfm"].selected {
+  border: 2px solid #F59E0B !important;
+  box-shadow: 0 0 15px #F59E0B !important;
+  background: rgba(245, 158, 11, 0.18) !important;
+}
+
+.role-card[data-role="parent"].selected {
+  border: 2px solid #06B6D4 !important;
+  box-shadow: 0 0 15px #06B6D4 !important;
+  background: rgba(6, 182, 212, 0.18) !important;
+}
+
+/* Selected Role Banner Indicator */
+.selected-role-banner {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.775rem;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.05em;
+  display: none;
+}
+
+/* Input Fields & Buttons */
+.login-form .form-control {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 0.8rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 10px;
+}
+
+.login-form .form-control:focus {
+  border-color: #6366F1 !important;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.5) !important;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 0.85rem;
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.8);
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+.forgot-link {
+  color: #38bdf8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
 }

@@ -1,16 +1,19 @@
 <?php
-// Practical Assessment & Laboratory Performance Management System
-// Authentication: Logout Handler
+// Practical Assessment System - Logout Controller
+// Zeal College of Engineering & Research
 
-require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/session.php';
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
 if (is_logged_in()) {
-    log_audit($conn, $_SESSION['user_id'], 'User Logout', 'users', 'User logged out safely.');
+    $user = get_logged_user();
+    log_audit($conn, $user['id'], $user['role'], 'User Logout', 'authentication', 'Logged out of system.');
 }
 
-$_SESSION = [];
+// Destroy session
+$_SESSION = array();
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(session_name(), '', time() - 42000,
@@ -20,6 +23,8 @@ if (ini_get("session.use_cookies")) {
 }
 session_destroy();
 
-header('Location: login.php');
+session_start();
+set_flash('info', 'You have been logged out safely.');
+header('Location: ' . BASE_URL . 'modules/authentication/login.php');
 exit();
 ?>

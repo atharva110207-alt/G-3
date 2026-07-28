@@ -1,6 +1,6 @@
 <?php
-// Practical Assessment & Laboratory Performance Management System
-// Core Utility & Evaluation Engine Functions
+// Practical Assessment System - Core Utility & Evaluation Engine Functions
+// Zeal College of Engineering & Research
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/config.php';
@@ -24,14 +24,60 @@ function sanitize($data) {
  *
  * @param mysqli $conn
  * @param int $user_id
+ * @param string $user_role
  * @param string $action
- * @param string $target_table
+ * @param string $target_module
  * @param string $details
  * @return bool
  */
-function log_audit($conn, $user_id, $action, $target_table, $details = '') {
-    $sql = "INSERT INTO audit_logs (user_id, action_performed, target_table, details) VALUES (?, ?, ?, ?)";
-    $stmt = execute_prepared($conn, $sql, "isss", [$user_id, $action, $target_table, $details]);
+function log_audit($conn, $user_id, $user_role, $action, $target_module, $details = '') {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    if (empty($user_role)) {
+        $user_role = get_user_role() ?? 'guest';
+    }
+    
+    $sql = "INSERT INTO audit_logs (user_id, user_role, action_performed, target_module, IP_address, details) VALUES (?, ?, ?, ?, ?, ?)";
+    $stmt = execute_prepared($conn, $sql, "isssss", [$user_id, $user_role, $action, $target_module, $ip, $details]);
+    if ($stmt) {
+        mysqli_stmt_close($stmt);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Get system setting from database
+ *
+ * @param mysqli $conn
+ * @param string $key
+ * @param string $default
+ * @return string
+ */
+function get_system_setting($conn, $key, $default = '1') {
+    $sql = "SELECT setting_value FROM system_settings WHERE setting_key = ?";
+    $stmt = execute_prepared($conn, $sql, "s", [$key]);
+    if ($stmt) {
+        $res = mysqli_stmt_get_result($stmt);
+        if ($row = mysqli_fetch_assoc($res)) {
+            mysqli_stmt_close($stmt);
+            return $row['setting_value'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return $default;
+}
+
+/**
+ * Set system setting in database
+ *
+ * @param mysqli $conn
+ * @param string $key
+ * @param string $value
+ * @return bool
+ */
+function set_system_setting($conn, $key, $value) {
+    $sql = "INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)";
+    $stmt = execute_prepared($conn, $sql, "ss", [$key, $value]);
     if ($stmt) {
         mysqli_stmt_close($stmt);
         return true;
@@ -41,26 +87,11 @@ function log_audit($conn, $user_id, $action, $target_table, $details = '') {
 
 /**
  * AUTOMATED EVALUATION ENGINE (Max 25 Marks per Experiment)
- * Calculates scores for all 4 criteria based on conduction & viva criteria.
- * 
- * 1. Regularity (Max 5 Marks):
- *    - Present on scheduled date = 5
- *    - Absent = 0
- * 2. Practical Conduction (Max 10 Marks):
- *    - Present & Performed on same day = 10
- *    - Present & Not Performed = 7
- *    - Absent on scheduled date & Performed Later = 5
- *    - Absent & Not Performed = 0
- * 3. Program / Practical Output (Max 5 Marks):
- *    - Present & Output Obtained = 5
- *    - Present & Output Not Obtained = 3
- *    - Absent & Performed Later = 2
- *    - Absent & Not Performed = 0
- * 4. Viva / Understanding (Max 5 Marks):
- *    - Evaluated / Checked Same Day = 5
- *    - Evaluated within 7 Days = 4
- *    - Evaluated after 7 Days = 3
- *    - Not Evaluated = 0
+ * Calculates scores for all 4 criteria:
+ * 1. Regularity (Max 5 Marks)
+ * 2. Practical Conduction (Max 10 Marks)
+ * 3. Program / Practical Output (Max 5 Marks)
+ * 4. Viva / Understanding (Max 5 Marks)
  *
  * @param int $regularity
  * @param int $conduction
@@ -97,48 +128,6 @@ function normalize_termwork_marks($obtained_marks, $out_of_marks, $scale_target 
     if ($out_of_marks <= 0) return 0;
     $percentage = ($obtained_marks / $out_of_marks);
     return round($percentage * $scale_target, 2);
-}
-
-/**
- * Automated Batch Creation Tool:
- * Auto-generates batches for a division based on roll number ranges.
- * E.g., Division C, Roll EC1301 to EC1320, Batch Size 10 -> C1 (EC1301-EC1310), C2 (EC1311-EC1320)
- *
- * @param mysqli $conn
- * @param string $division
- * @param string $prefix (e.g. C)
- * @param int $start_num (e.g. 1301)
- * @param int $end_num (e.g. 1320)
- * @param int $batch_size (e.g. 10 or 20)
- * @param string $roll_prefix (e.g. EC)
- * @param string $academic_year
- * @return int Number of batches created
- */
-function auto_generate_batches($conn, $division, $prefix, $start_num, $end_num, $batch_size, $roll_prefix, $academic_year) {
-    $batches_created = 0;
-    $current_start = $start_num;
-    $batch_index = 1;
-    
-    while ($current_start <= $end_num) {
-        $current_end = min($current_start + $batch_size - 1, $end_num);
-        
-        $b_name = $prefix . $batch_index;
-        $start_roll = $roll_prefix . $current_start;
-        $end_roll = $roll_prefix . $current_end;
-        
-        $sql = "INSERT INTO batches (batch_name, start_roll, end_roll, division, academic_year) VALUES (?, ?, ?, ?, ?)";
-        $stmt = execute_prepared($conn, $sql, "sssss", [$b_name, $start_roll, $end_roll, $division, $academic_year]);
-        
-        if ($stmt) {
-            mysqli_stmt_close($stmt);
-            $batches_created++;
-        }
-        
-        $current_start = $current_end + 1;
-        $batch_index++;
-    }
-    
-    return $batches_created;
 }
 
 /**

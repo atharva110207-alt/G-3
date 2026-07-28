@@ -1,8 +1,6 @@
 <?php
-// Dedicated Clean Print Report Viewer
-
-require_once __DIR__ . '/../config/auth.php';
-require_login();
-header('Location: final_marksheet.php');
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../config/config.php';
+header('Location: export_pdf.php');
 exit();
 ?>

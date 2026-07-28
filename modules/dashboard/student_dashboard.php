@@ -1,137 +1,125 @@
 <?php
-// Student Personal Practical Performance & Attendance Portal
+// Practical Assessment System - Student Workspace Dashboard
+// Zeal College of Engineering & Research
 
-$page_title = 'Student Portal';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/auth.php';
-require_once __DIR__ . '/../../includes/functions.php';
+$page_title = "Student Dashboard";
+require_once __DIR__ . '/../../includes/header.php';
 
-require_role(['student', 'admin']);
+require_role(['student', 'admin', 'hod']);
 
-$student_id = $_SESSION['user_id'];
-$roll_no = $_SESSION['student_roll_no'] ?? '';
+$student_id = $user['id'];
+$release_status = get_system_setting($conn, 'release_reports_student_view', '1');
 
-// Calculate Attendance %
-$att_sql = "SELECT 
-            COUNT(*) as total_practicals,
-            SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present_count
-            FROM attendance WHERE student_id = ?";
-$att_stmt = execute_prepared($conn, $att_sql, "i", [$student_id]);
-$att_res = $att_stmt ? mysqli_fetch_assoc(mysqli_stmt_get_result($att_stmt)) : ['total_practicals' => 0, 'present_count' => 0];
-
-$total_practicals = intval($att_res['total_practicals'] ?? 0);
-$present_count = intval($att_res['present_count'] ?? 0);
-$attendance_pct = $total_practicals > 0 ? round(($present_count / $total_practicals) * 100, 1) : 100;
-
-// Fetch Experiment Score Breakdown
-$score_sql = "SELECT ass.*, p.exp_no, p.title, p.subject_name, p.scheduled_date, u.full_name as faculty_name
-              FROM assessment ass
-              JOIN practicals p ON ass.practical_id = p.id
-              LEFT JOIN users u ON ass.faculty_id = u.id
-              WHERE ass.student_id = ?
-              ORDER BY p.exp_no ASC";
-$score_stmt = execute_prepared($conn, $score_sql, "i", [$student_id]);
-$score_res = $score_stmt ? mysqli_stmt_get_result($score_stmt) : false;
-
-// Cumulative Average calculation
+// Fetch Student Evaluation Marks
+$eval_sql = "SELECT a.*, p.title as exp_title, p.exp_no, p.subject_name, p.scheduled_date 
+            FROM assessment a 
+            JOIN practicals p ON a.practical_id = p.id 
+            WHERE a.student_id = ? 
+            ORDER BY p.exp_no ASC";
+$eval_stmt = execute_prepared($conn, $eval_sql, "i", [$student_id]);
+$my_evaluations = [];
 $total_obtained = 0;
-$exp_count = 0;
+$total_max = 0;
+if ($eval_stmt) {
+    $res = mysqli_stmt_get_result($eval_stmt);
+    while ($row = mysqli_fetch_assoc($res)) {
+        $my_evaluations[] = $row;
+        $total_obtained += $row['total_score'];
+        $total_max += 25;
+    }
+    mysqli_stmt_close($eval_stmt);
+}
 
-include __DIR__ . '/../../includes/header.php';
+// Attendance stats
+$att_sql = "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present FROM attendance WHERE student_id = ?";
+$att_stmt = execute_prepared($conn, $att_sql, "i", [$student_id]);
+$att_total = 0;
+$att_present = 0;
+if ($att_stmt) {
+    $res = mysqli_stmt_get_result($att_stmt);
+    if ($r = mysqli_fetch_assoc($res)) {
+        $att_total = $r['total'];
+        $att_present = $r['present'];
+    }
+    mysqli_stmt_close($att_stmt);
+}
+$att_percentage = $att_total > 0 ? round(($att_present / $att_total) * 100, 1) : 100;
 ?>
 
-<div class="card">
-    <div class="card-header">
-        <div>
-            <h2 class="card-title">Student Performance Dashboard</h2>
-            <p style="font-size: 0.875rem; color: var(--text-muted);">Roll Number: <strong><?php echo sanitize($roll_no); ?></strong> | Division: <strong><?php echo sanitize($_SESSION['division'] ?? 'Division C'); ?></strong></p>
-        </div>
-        <span class="badge badge-info">Term 2025-2026</span>
+<?php if ($release_status !== '1'): ?>
+  <div class="alert alert-warning">
+    <i class="fas fa-lock me-2"></i> <strong>Report Release Notice:</strong> Official termwork marksheets are currently being evaluated and prepared by the Department HOD. Preliminary scores are shown below.
+  </div>
+<?php endif; ?>
+
+<!-- Performance Overview Cards -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-id-badge"></i></div>
+    <div class="stat-info">
+      <h3><?php echo sanitize($user['student_roll_no'] ?: 'EC-STD'); ?></h3>
+      <p>Roll No &bull; <?php echo sanitize($user['class'] . ' ' . $user['division']); ?></p>
     </div>
+  </div>
 
-    <!-- Overview Stat Cards -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">📅</div>
-            <div class="stat-content">
-                <div class="stat-value"><?php echo $attendance_pct; ?>%</div>
-                <div class="stat-label">Practical Attendance</div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar-fill" style="width: <?php echo $attendance_pct; ?>%; background-color: <?php echo $attendance_pct >= 75 ? '#16a34a' : '#dc2626'; ?>;"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">🧪</div>
-            <div class="stat-content">
-                <div class="stat-value"><?php echo $present_count; ?> / <?php echo $total_practicals; ?></div>
-                <div class="stat-label">Sessions Attended</div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">⭐</div>
-            <div class="stat-content">
-                <div id="cumulAverageDisplay" class="stat-value">--</div>
-                <div class="stat-label">Cumulative Score (out of 25)</div>
-            </div>
-        </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;"><i class="fas fa-user-check"></i></div>
+    <div class="stat-info">
+      <h3><?php echo $att_percentage; ?>%</h3>
+      <p>Overall Practical Attendance</p>
     </div>
+  </div>
 
-    <!-- Detailed Experiment Breakdown Cards -->
-    <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem;">Experiment-by-Experiment Score Breakdown (25 Marks Max)</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
-        <?php if ($score_res && mysqli_num_rows($score_res) > 0): ?>
-            <?php while ($s = mysqli_fetch_assoc($score_res)): 
-                $total_obtained += $s['total_score'];
-                $exp_count++;
-            ?>
-                <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-sm);">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
-                        <div>
-                            <span class="badge badge-info">Exp <?php echo $s['exp_no']; ?></span>
-                            <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-top: 0.25rem;"><?php echo sanitize($s['title']); ?></h4>
-                            <span style="font-size: 0.75rem; color: var(--text-muted);"><?php echo sanitize($s['subject_name']); ?></span>
-                        </div>
-                        <div class="total-score-badge <?php echo $s['total_score'] >= 22 ? 'score-perfect' : ($s['total_score'] >= 15 ? 'score-warning' : 'score-danger'); ?>">
-                            <?php echo $s['total_score']; ?> / 25
-                        </div>
-                    </div>
-
-                    <!-- 4 Evaluation Criteria Breakdown -->
-                    <div style="font-size: 0.8125rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0; background-color: var(--bg-primary); padding: 0.75rem; border-radius: var(--radius-sm);">
-                        <div>Regularity: <strong><?php echo $s['regularity_score']; ?>/5</strong></div>
-                        <div>Conduction: <strong><?php echo $s['conduction_score']; ?>/10</strong></div>
-                        <div>Output: <strong><?php echo $s['output_score']; ?>/5</strong></div>
-                        <div>Viva / Concept: <strong><?php echo $s['viva_score']; ?>/5</strong></div>
-                    </div>
-
-                    <?php if (!empty($s['comments'])): ?>
-                        <div style="font-size: 0.8125rem; color: var(--text-secondary); font-style: italic; border-left: 3px solid var(--accent-color); padding-left: 0.5rem;">
-                            💬 Feedback: "<?php echo sanitize($s['comments']); ?>"
-                        </div>
-                    <?php endif; ?>
-                </div>
-            <?php endwhile; ?>
-        <?php else: ?>
-            <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
-                No practical evaluations recorded yet for your account.
-            </div>
-        <?php endif; ?>
+  <div class="stat-card">
+    <div class="stat-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;"><i class="fas fa-award"></i></div>
+    <div class="stat-info">
+      <h3><?php echo $total_obtained; ?> / <?php echo $total_max ?: 25; ?></h3>
+      <p>Total Practical Marks</p>
     </div>
+  </div>
 </div>
 
-<?php 
-$cumul_avg = $exp_count > 0 ? round($total_obtained / $exp_count, 1) : 0;
-?>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const cumulDisplay = document.getElementById('cumulAverageDisplay');
-        if (cumulDisplay) {
-            cumulDisplay.textContent = '<?php echo $cumul_avg; ?> / 25';
-        }
-    });
-</script>
+<!-- Evaluation Marks Breakdown -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-chart-bar text-primary me-2"></i> Practical Evaluation Performance Breakdown</h3>
+    <a href="<?php echo BASE_URL; ?>reports/final_marksheet.php" class="btn btn-primary btn-sm"><i class="fas fa-file-pdf me-1"></i> Final Marksheet</a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Exp #</th>
+          <th>Subject</th>
+          <th>Experiment Title</th>
+          <th>Regularity (5)</th>
+          <th>Conduction (10)</th>
+          <th>Output (5)</th>
+          <th>Viva (5)</th>
+          <th>Total Marks (25)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (empty($my_evaluations)): ?>
+          <tr><td colspan="8" class="text-center" style="color: var(--text-muted); padding: 2rem;">No evaluated experiments recorded yet.</td></tr>
+        <?php else: ?>
+          <?php foreach ($my_evaluations as $ev): ?>
+            <tr>
+              <td><span class="badge badge-info">Exp #<?php echo $ev['exp_no']; ?></span></td>
+              <td><strong><?php echo sanitize($ev['subject_name']); ?></strong></td>
+              <td><?php echo sanitize($ev['exp_title']); ?></td>
+              <td><?php echo $ev['regularity_score']; ?> / 5</td>
+              <td><?php echo $ev['conduction_score']; ?> / 10</td>
+              <td><?php echo $ev['output_score']; ?> / 5</td>
+              <td><?php echo $ev['viva_score']; ?> / 5</td>
+              <td><strong style="color: #38bdf8; font-size: 1.05rem;"><?php echo $ev['total_score']; ?> / 25</strong></td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

@@ -1,11 +1,9 @@
-// Form Input Validation & Sanity Checks
-
-function validateScoreLimits(input, min, max) {
-  const val = parseInt(input.value, 10);
-  if (isNaN(val) || val < min || val > max) {
-    alert(`Value must be between ${min} and ${max}`);
-    input.value = Math.max(min, Math.min(max, val || min));
-    return false;
-  }
-  return true;
-}
+// Form Validation Helper
+document.addEventListener('DOMContentLoaded', () => {
+  const forms = document.querySelectorAll('form');
+  forms.forEach(form => {
+    form.addEventListener('submit', (e) => {
+      // Basic client-side sanity checks if needed
+    });
+  });
+});

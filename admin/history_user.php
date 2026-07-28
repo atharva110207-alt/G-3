@@ -1,11 +1,9 @@
 <?php
-// User Activity History Redirect / View
+// Practical Assessment System - User History Controller
+// Zeal College of Engineering & Research
 
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/auth.php';
-
-require_role(['admin', 'hod']);
-
-header('Location: audit_logs.php');
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../config/config.php';
+header('Location: manage_user.php');
 exit();
 ?>

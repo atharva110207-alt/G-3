@@ -1,256 +1,268 @@
 <?php
-// Smart 25-Mark Practical Conduction & Assessment Grid
+// Practical Assessment System - Multi-Tier Rubric Assessment Evaluator
+// Zeal College of Engineering & Research
 
-$page_title = 'Practical Conduction & Assessment';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../config/auth.php';
-require_once __DIR__ . '/../../includes/functions.php';
+$page_title = "Practical Conduction & Evaluation";
+require_once __DIR__ . '/../../includes/header.php';
 
 require_role(['faculty', 'admin', 'hod']);
 
 $practical_id = intval($_GET['practical_id'] ?? 0);
+$error = '';
+$success = '';
 
-// Fetch Practical details
-$p_sql = "SELECT p.*, b.batch_name, b.start_roll, b.end_roll 
-          FROM practicals p 
-          JOIN batches b ON p.batch_id = b.id 
-          WHERE p.id = ? LIMIT 1";
-$p_stmt = execute_prepared($conn, $p_sql, "i", [$practical_id]);
-$pract = false;
-if ($p_stmt) {
-    $res = mysqli_stmt_get_result($p_stmt);
-    $pract = mysqli_fetch_assoc($res);
-    mysqli_stmt_close($p_stmt);
-}
+// Save Assessment Form Submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_assessment'])) {
+    $practical_id = intval($_POST['practical_id'] ?? 0);
+    $eval_data = $_POST['eval'] ?? []; // student_id => [regularity, conduction, output, viva, comments]
 
-// Fallback to select first available practical if none selected
-if (!$pract) {
-    $first_res = mysqli_query($conn, "SELECT id FROM practicals ORDER BY id DESC LIMIT 1");
-    if ($first_res && $row = mysqli_fetch_assoc($first_res)) {
-        header('Location: practical_conduction.php?practical_id=' . $row['id']);
+    if ($practical_id > 0 && !empty($eval_data)) {
+        foreach ($eval_data as $student_id => $scores) {
+            $student_id = intval($student_id);
+            $reg = intval($scores['regularity'] ?? 0);
+            $cond = intval($scores['conduction'] ?? 0);
+            $out = intval($scores['output'] ?? 0);
+            $viva = intval($scores['viva'] ?? 0);
+            $comments = sanitize($scores['comments'] ?? '');
+
+            $eval_result = evaluate_experiment($reg, $cond, $out, $viva);
+            $total = $eval_result['total'];
+            $today = date('Y-m-d');
+
+            $sql = "INSERT INTO assessment (practical_id, student_id, faculty_id, regularity_score, conduction_score, output_score, viva_score, total_score, evaluation_date, comments) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+                    ON DUPLICATE KEY UPDATE 
+                    regularity_score = VALUES(regularity_score), 
+                    conduction_score = VALUES(conduction_score), 
+                    output_score = VALUES(output_score), 
+                    viva_score = VALUES(viva_score), 
+                    total_score = VALUES(total_score), 
+                    evaluation_date = VALUES(evaluation_date), 
+                    comments = VALUES(comments)";
+            
+            $stmt = execute_prepared($conn, $sql, "iiiiiisiss", [
+                $practical_id, $student_id, $user['id'], 
+                $eval_result['regularity'], $eval_result['conduction'], 
+                $eval_result['output'], $eval_result['viva'], $total, 
+                $today, $comments
+            ]);
+            if ($stmt) { mysqli_stmt_close($stmt); }
+        }
+
+        log_audit($conn, $user['id'], $user['role'], 'Evaluate Practicals', 'assessment', 'Saved 25-mark evaluation for practical ID #' . $practical_id);
+        set_flash('success', 'Student practical evaluation scores saved successfully!');
+        header('Location: practical_conduction.php?practical_id=' . $practical_id);
         exit();
     }
 }
 
-// Handle Evaluation POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_assessment'])) {
-    $faculty_id = $_SESSION['user_id'];
-    $eval_date = date('Y-m-d');
-    $students_eval = $_POST['eval'] ?? [];
+// Fetch Practicals Dropdown
+$pract_sql = "SELECT p.*, b.batch_name FROM practicals p JOIN batches b ON p.batch_id = b.id ORDER BY p.scheduled_date DESC";
+$pract_res = mysqli_query($conn, $pract_sql);
+$practicals_opt = [];
+if ($pract_res) {
+    while ($pr = mysqli_fetch_assoc($pract_res)) {
+        $practicals_opt[] = $pr;
+    }
+}
 
-    foreach ($students_eval as $student_id => $data) {
-        $student_id = intval($student_id);
-        $regularity = intval($data['regularity'] ?? 0);
-        $conduction = intval($data['conduction'] ?? 0);
-        $output = intval($data['output'] ?? 0);
-        $viva = intval($data['viva'] ?? 0);
-        $comments = sanitize($data['comments'] ?? '');
+// Selected Practical Details
+$selected_pract = null;
+$students_roster = [];
+$existing_assessment = [];
 
-        $eval_result = evaluate_experiment($regularity, $conduction, $output, $viva);
-        $total_score = $eval_result['total'];
+if ($practical_id > 0) {
+    foreach ($practicals_opt as $p) {
+        if ($p['id'] == $practical_id) {
+            $selected_pract = $p;
+            break;
+        }
+    }
 
-        $ins_sql = "INSERT INTO assessment (practical_id, student_id, faculty_id, regularity_score, conduction_score, output_score, viva_score, total_score, evaluation_date, comments)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE 
-                    regularity_score = VALUES(regularity_score),
-                    conduction_score = VALUES(conduction_score),
-                    output_score = VALUES(output_score),
-                    viva_score = VALUES(viva_score),
-                    total_score = VALUES(total_score),
-                    evaluation_date = VALUES(evaluation_date),
-                    comments = VALUES(comments)";
-
-        $stmt = execute_prepared($conn, $ins_sql, "iii-iiiis-s", [
-            $practical_id, $student_id, $faculty_id,
-            $eval_result['regularity'], $eval_result['conduction'],
-            $eval_result['output'], $eval_result['viva'],
-            $total_score, $eval_date, $comments
-        ]);
+    if ($selected_pract) {
+        $b_id = $selected_pract['batch_id'];
         
-        // Correct types string: "iiiiiiiiss"
-        // Wait, let's fix type string carefully
+        $b_sql = "SELECT * FROM batches WHERE id = ?";
+        $b_stmt = execute_prepared($conn, $b_sql, "i", [$b_id]);
+        $batch_info = null;
+        if ($b_stmt) {
+            $res = mysqli_stmt_get_result($b_stmt);
+            $batch_info = mysqli_fetch_assoc($res);
+            mysqli_stmt_close($b_stmt);
+        }
+
+        if ($batch_info && !empty($batch_info['start_roll']) && !empty($batch_info['end_roll'])) {
+            $st_sql = "SELECT id, full_name, student_roll_no, zprn FROM users WHERE role = 'student' AND student_roll_no >= ? AND student_roll_no <= ? ORDER BY student_roll_no ASC";
+            $st_stmt = execute_prepared($conn, $st_sql, "ss", [$batch_info['start_roll'], $batch_info['end_roll']]);
+        } else {
+            $st_sql = "SELECT id, full_name, student_roll_no, zprn FROM users WHERE role = 'student' AND division = ? ORDER BY student_roll_no ASC";
+            $st_stmt = execute_prepared($conn, $st_sql, "s", [$selected_pract['division']]);
+        }
+
+        if ($st_stmt) {
+            $res = mysqli_stmt_get_result($st_stmt);
+            while ($st = mysqli_fetch_assoc($res)) {
+                $students_roster[] = $st;
+            }
+            mysqli_stmt_close($st_stmt);
+        }
+
+        // Fetch Existing Assessment Scores
+        $ass_sql = "SELECT * FROM assessment WHERE practical_id = ?";
+        $ass_stmt = execute_prepared($conn, $ass_sql, "i", [$practical_id]);
+        if ($ass_stmt) {
+            $res = mysqli_stmt_get_result($ass_stmt);
+            while ($ar = mysqli_fetch_assoc($res)) {
+                $existing_assessment[$ar['student_id']] = $ar;
+            }
+            mysqli_stmt_close($ass_stmt);
+        }
     }
 }
-
-// Re-handle POST with exact type string
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_assessment'])) {
-    $faculty_id = $_SESSION['user_id'];
-    $eval_date = date('Y-m-d');
-    $students_eval = $_POST['eval'] ?? [];
-
-    foreach ($students_eval as $student_id => $data) {
-        $student_id = intval($student_id);
-        $regularity = intval($data['regularity'] ?? 0);
-        $conduction = intval($data['conduction'] ?? 0);
-        $output = intval($data['output'] ?? 0);
-        $viva = intval($data['viva'] ?? 0);
-        $comments = sanitize($data['comments'] ?? '');
-
-        $eval_result = evaluate_experiment($regularity, $conduction, $output, $viva);
-        $total_score = $eval_result['total'];
-
-        $ins_sql = "INSERT INTO assessment (practical_id, student_id, faculty_id, regularity_score, conduction_score, output_score, viva_score, total_score, evaluation_date, comments)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE 
-                    regularity_score = VALUES(regularity_score),
-                    conduction_score = VALUES(conduction_score),
-                    output_score = VALUES(output_score),
-                    viva_score = VALUES(viva_score),
-                    total_score = VALUES(total_score),
-                    evaluation_date = VALUES(evaluation_date),
-                    comments = VALUES(comments)";
-
-        $stmt = execute_prepared($conn, $ins_sql, "iiiiiiiiss", [
-            $practical_id, $student_id, $faculty_id,
-            $eval_result['regularity'], $eval_result['conduction'],
-            $eval_result['output'], $eval_result['viva'],
-            $total_score, $eval_date, $comments
-        ]);
-        if ($stmt) mysqli_stmt_close($stmt);
-    }
-
-    log_audit($conn, $_SESSION['user_id'], 'Saved Practical Assessment Grid', 'assessment', "Evaluated 25-mark scores for Practical Exp #{$pract['exp_no']} (Batch {$pract['batch_name']})");
-    set_flash('success', 'Practical assessment grid saved successfully!');
-    header("Location: practical_conduction.php?practical_id=$practical_id");
-    exit();
-}
-
-// Fetch Students & Existing Assessments
-$students_sql = "SELECT u.id, u.full_name, u.student_roll_no, 
-                att.status as att_status,
-                ass.regularity_score, ass.conduction_score, ass.output_score, ass.viva_score, ass.total_score, ass.comments
-                FROM users u 
-                LEFT JOIN attendance att ON att.student_id = u.id AND att.practical_id = ?
-                LEFT JOIN assessment ass ON ass.student_id = u.id AND ass.practical_id = ?
-                WHERE u.role = 'student' AND u.division = ?
-                AND CAST(SUBSTRING(u.student_roll_no, 3) AS UNSIGNED) >= CAST(SUBSTRING(?, 3) AS UNSIGNED)
-                AND CAST(SUBSTRING(u.student_roll_no, 3) AS UNSIGNED) <= CAST(SUBSTRING(?, 3) AS UNSIGNED)
-                ORDER BY u.student_roll_no ASC";
-
-$stmt = execute_prepared($conn, $students_sql, "iisss", [$practical_id, $practical_id, $pract['division'], $pract['start_roll'], $pract['end_roll']]);
-$students_res = $stmt ? mysqli_stmt_get_result($stmt) : false;
-
-$all_pract_res = mysqli_query($conn, "SELECT p.id, p.exp_no, p.title, b.batch_name FROM practicals p JOIN batches b ON p.batch_id = b.id ORDER BY p.id DESC");
-
-include __DIR__ . '/../../includes/header.php';
 ?>
 
-<div class="card">
-    <div class="card-header">
-        <div>
-            <h2 class="card-title">25-Mark Assessment Engine: Exp <?php echo $pract['exp_no']; ?> (<?php echo sanitize($pract['batch_name']); ?>)</h2>
-            <p style="font-size: 0.875rem; color: var(--text-muted);">
-                Subject: <strong><?php echo sanitize($pract['subject_name']); ?></strong> | Title: <strong><?php echo sanitize($pract['title']); ?></strong>
-            </p>
-        </div>
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-pen-nib text-primary me-2"></i> Multi-Tier Practical Rubric Evaluator (Max 25 Marks)</h3>
+  </div>
 
-        <select class="form-select" style="width: auto;" onchange="location = 'practical_conduction.php?practical_id=' + this.value;">
-            <?php if ($all_pract_res): while ($ap = mysqli_fetch_assoc($all_pract_res)): ?>
-                <option value="<?php echo $ap['id']; ?>" <?php echo $ap['id'] == $practical_id ? 'selected' : ''; ?>>
-                    Exp <?php echo $ap['exp_no']; ?> - <?php echo sanitize($ap['title']); ?> (<?php echo sanitize($ap['batch_name']); ?>)
-                </option>
-            <?php endwhile; endif; ?>
-        </select>
+  <form method="GET" action="" class="action-bar" style="margin-bottom: 0;">
+    <div style="flex: 1;">
+      <label for="practical_id" class="form-label">Select Practical Experiment <span class="text-danger">*</span></label>
+      <select id="practical_id" name="practical_id" class="form-select" onchange="this.form.submit()">
+        <option value="">-- Choose Practical --</option>
+        <?php foreach ($practicals_opt as $po): ?>
+          <option value="<?php echo $po['id']; ?>" <?php echo $practical_id == $po['id'] ? 'selected' : ''; ?>>
+            Exp #<?php echo $po['exp_no']; ?>: <?php echo sanitize($po['title']); ?> (Batch <?php echo sanitize($po['batch_name'] . ' - Plan Date: ' . format_date($po['scheduled_date'])); ?>)
+          </option>
+        <?php endforeach; ?>
+      </select>
     </div>
-
-    <!-- Multi-tier 25-mark criteria explanation bar -->
-    <div style="background-color: var(--primary-light); border-left: 4px solid var(--primary-color); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.8125rem;">
-        <strong>4-Tier Automated Evaluation Engine (Max 25 Marks per Experiment):</strong><br>
-        1. <strong>Regularity (5)</strong>: Present (5), Absent (0)<br>
-        2. <strong>Conduction (10)</strong>: Present & Same Day (10), Present & Not Performed (7), Absent & Performed Later (5), Absent & Not Performed (0)<br>
-        3. <strong>Practical Output (5)</strong>: Present & Output Obtained (5), Present & No Output (3), Absent & Performed Later (2), Absent & Not Performed (0)<br>
-        4. <strong>Viva / Concept (5)</strong>: Checked Same Day (5), Within 7 Days (4), After 7 Days (3), Not Evaluated (0)
-    </div>
-
-    <form action="" method="POST">
-        <input type="hidden" name="submit_assessment" value="1">
-
-        <div class="table-responsive">
-            <table class="table assessment-table">
-                <thead>
-                    <tr>
-                        <th>Roll No</th>
-                        <th>Student Name</th>
-                        <th>Att.</th>
-                        <th>Regularity (5)</th>
-                        <th>Conduction (10)</th>
-                        <th>Output (5)</th>
-                        <th>Viva (5)</th>
-                        <th>Total Score (25)</th>
-                        <th>Viva Feedback / Comments</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if ($students_res && mysqli_num_rows($students_res) > 0): ?>
-                        <?php while ($st = mysqli_fetch_assoc($students_res)): 
-                            $r_score = $st['regularity_score'] ?? ($st['att_status'] === 'Absent' ? 0 : 5);
-                            $c_score = $st['conduction_score'] ?? ($st['att_status'] === 'Absent' ? 0 : 10);
-                            $o_score = $st['output_score'] ?? ($st['att_status'] === 'Absent' ? 0 : 5);
-                            $v_score = $st['viva_score'] ?? ($st['att_status'] === 'Absent' ? 0 : 5);
-                            $tot = $st['total_score'] ?? ($r_score + $c_score + $o_score + $v_score);
-                        ?>
-                            <tr>
-                                <td><strong><?php echo sanitize($st['student_roll_no']); ?></strong></td>
-                                <td><?php echo sanitize($st['full_name']); ?></td>
-                                <td>
-                                    <span class="badge badge-<?php echo ($st['att_status'] ?? 'Present') === 'Present' ? 'success' : 'danger'; ?>">
-                                        <?php echo $st['att_status'] ?? 'Present'; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <select name="eval[<?php echo $st['id']; ?>][regularity]" class="form-select regularity-select">
-                                        <option value="5" <?php echo $r_score == 5 ? 'selected' : ''; ?>>5 - Present</option>
-                                        <option value="0" <?php echo $r_score == 0 ? 'selected' : ''; ?>>0 - Absent</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <select name="eval[<?php echo $st['id']; ?>][conduction]" class="form-select conduction-select">
-                                        <option value="10" <?php echo $c_score == 10 ? 'selected' : ''; ?>>10 - Present & Performed Same Day</option>
-                                        <option value="7" <?php echo $c_score == 7 ? 'selected' : ''; ?>>7 - Present & Not Performed</option>
-                                        <option value="5" <?php echo $c_score == 5 ? 'selected' : ''; ?>>5 - Absent & Performed Later</option>
-                                        <option value="0" <?php echo $c_score == 0 ? 'selected' : ''; ?>>0 - Absent & Not Performed</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <select name="eval[<?php echo $st['id']; ?>][output]" class="form-select output-select">
-                                        <option value="5" <?php echo $o_score == 5 ? 'selected' : ''; ?>>5 - Present & Output Obtained</option>
-                                        <option value="3" <?php echo $o_score == 3 ? 'selected' : ''; ?>>3 - Present & No Output</option>
-                                        <option value="2" <?php echo $o_score == 2 ? 'selected' : ''; ?>>2 - Absent & Performed Later</option>
-                                        <option value="0" <?php echo $o_score == 0 ? 'selected' : ''; ?>>0 - Absent & Not Performed</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <select name="eval[<?php echo $st['id']; ?>][viva]" class="form-select viva-select">
-                                        <option value="5" <?php echo $v_score == 5 ? 'selected' : ''; ?>>5 - Checked Same Day</option>
-                                        <option value="4" <?php echo $v_score == 4 ? 'selected' : ''; ?>>4 - Checked &lt;= 7 Days</option>
-                                        <option value="3" <?php echo $v_score == 3 ? 'selected' : ''; ?>>3 - Checked &gt; 7 Days</option>
-                                        <option value="0" <?php echo $v_score == 0 ? 'selected' : ''; ?>>0 - Not Evaluated</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="total-score-badge"><?php echo $tot; ?> / 25</div>
-                                </td>
-                                <td>
-                                    <input type="text" name="eval[<?php echo $st['id']; ?>][comments]" class="form-control" placeholder="Viva remarks..." value="<?php echo sanitize($st['comments'] ?? ''); ?>">
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="9" style="text-align: center; color: var(--text-muted);">No students found in target batch.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-            <a href="override_marks.php?practical_id=<?php echo $practical_id; ?>" class="btn btn-secondary btn-sm">🛠️ Override Marks with Audit Log</a>
-            <button type="submit" class="btn btn-primary">Save Assessment Grid (25 Marks)</button>
-        </div>
-    </form>
+  </form>
 </div>
 
-<script src="<?php echo BASE_URL; ?>assets/js/assesment.js"></script>
+<?php if ($selected_pract): ?>
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">
+          <i class="fas fa-award text-accent me-2"></i> 
+          Evaluation Rubric: Exp #<?php echo $selected_pract['exp_no']; ?> - <?php echo sanitize($selected_pract['title']); ?>
+        </h3>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
+          Plan Date: <strong><?php echo format_date($selected_pract['scheduled_date']); ?></strong> &bull; Criteria: Regularity (5) + Conduction (10) + Output (5) + Viva (5) = Total (25 Marks)
+        </p>
+      </div>
+    </div>
+
+    <form method="POST" action="">
+      <input type="hidden" name="save_assessment" value="1">
+      <input type="hidden" name="practical_id" value="<?php echo $selected_pract['id']; ?>">
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Roll Number</th>
+              <th>Student Name</th>
+              <th>Regularity (5)</th>
+              <th>Conduction (10)</th>
+              <th>Output (5)</th>
+              <th>Viva (5)</th>
+              <th>Total (25)</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if (empty($students_roster)): ?>
+              <tr><td colspan="8" class="text-center" style="color: var(--text-muted); padding: 2rem;">No students found in batch roster.</td></tr>
+            <?php else: ?>
+              <?php foreach ($students_roster as $st): ?>
+                <?php 
+                  $ex = $existing_assessment[$st['id']] ?? null;
+                  $r_val = $ex['regularity_score'] ?? 5;
+                  $c_val = $ex['conduction_score'] ?? 10;
+                  $o_val = $ex['output_score'] ?? 5;
+                  $v_val = $ex['viva_score'] ?? 5;
+                  $t_val = $ex['total_score'] ?? ($r_val + $c_val + $o_val + $v_val);
+                ?>
+                <tr class="eval-row">
+                  <td><strong class="badge badge-info" style="font-size: 0.85rem;"><?php echo sanitize($st['student_roll_no']); ?></strong></td>
+                  <td><strong style="color: var(--text-primary);"><?php echo sanitize($st['full_name']); ?></strong></td>
+                  
+                  <td>
+                    <select name="eval[<?php echo $st['id']; ?>][regularity]" class="form-select score-input score-reg" style="width: 70px;" onchange="calculateRowTotal(this)">
+                      <option value="5" <?php echo $r_val == 5 ? 'selected' : ''; ?>>5</option>
+                      <option value="0" <?php echo $r_val == 0 ? 'selected' : ''; ?>>0</option>
+                    </select>
+                  </td>
+
+                  <td>
+                    <select name="eval[<?php echo $st['id']; ?>][conduction]" class="form-select score-input score-cond" style="width: 75px;" onchange="calculateRowTotal(this)">
+                      <option value="10" <?php echo $c_val == 10 ? 'selected' : ''; ?>>10</option>
+                      <option value="7" <?php echo $c_val == 7 ? 'selected' : ''; ?>>7</option>
+                      <option value="5" <?php echo $c_val == 5 ? 'selected' : ''; ?>>5</option>
+                      <option value="0" <?php echo $c_val == 0 ? 'selected' : ''; ?>>0</option>
+                    </select>
+                  </td>
+
+                  <td>
+                    <select name="eval[<?php echo $st['id']; ?>][output]" class="form-select score-input score-out" style="width: 70px;" onchange="calculateRowTotal(this)">
+                      <option value="5" <?php echo $o_val == 5 ? 'selected' : ''; ?>>5</option>
+                      <option value="3" <?php echo $o_val == 3 ? 'selected' : ''; ?>>3</option>
+                      <option value="2" <?php echo $o_val == 2 ? 'selected' : ''; ?>>2</option>
+                      <option value="0" <?php echo $o_val == 0 ? 'selected' : ''; ?>>0</option>
+                    </select>
+                  </td>
+
+                  <td>
+                    <select name="eval[<?php echo $st['id']; ?>][viva]" class="form-select score-input score-viva" style="width: 70px;" onchange="calculateRowTotal(this)">
+                      <option value="5" <?php echo $v_val == 5 ? 'selected' : ''; ?>>5</option>
+                      <option value="4" <?php echo $v_val == 4 ? 'selected' : ''; ?>>4</option>
+                      <option value="3" <?php echo $v_val == 3 ? 'selected' : ''; ?>>3</option>
+                      <option value="0" <?php echo $v_val == 0 ? 'selected' : ''; ?>>0</option>
+                    </select>
+                  </td>
+
+                  <td>
+                    <span class="row-total-badge badge badge-success" style="font-size: 1rem; font-weight: 800; min-width: 50px; text-align: center;">
+                      <?php echo $t_val; ?> / 25
+                    </span>
+                  </td>
+
+                  <td>
+                    <input type="text" name="eval[<?php echo $st['id']; ?>][comments]" class="form-control" placeholder="Comments..." value="<?php echo sanitize($ex['comments'] ?? ''); ?>" style="font-size: 0.8rem;">
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
+
+      <?php if (!empty($students_roster)): ?>
+        <div style="padding: 1.5rem; border-top: 1px solid var(--border-color); text-align: right;">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-save me-2"></i> Save & Lock Evaluation Scores
+          </button>
+        </div>
+      <?php endif; ?>
+    </form>
+  </div>
+<?php endif; ?>
+
+<script>
+function calculateRowTotal(selectElem) {
+  const row = selectElem.closest('.eval-row');
+  const reg = parseInt(row.querySelector('.score-reg').value) || 0;
+  const cond = parseInt(row.querySelector('.score-cond').value) || 0;
+  const out = parseInt(row.querySelector('.score-out').value) || 0;
+  const viva = parseInt(row.querySelector('.score-viva').value) || 0;
+
+  const total = reg + cond + out + viva;
+  const totalBadge = row.querySelector('.row-total-badge');
+  totalBadge.innerText = total + " / 25";
+}
+</script>
+
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

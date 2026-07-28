@@ -1,23 +1,59 @@
 <?php
-// Practical Assessment & Laboratory Performance Management System
-// Footer Include
-?>
-        </div><!-- /.content-wrapper -->
-        <footer style="padding: 1.25rem 1.75rem; border-top: 1px solid var(--border-color); background-color: var(--bg-card); font-size: 0.8125rem; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between;">
-            <div>
-                &copy; <?php echo date('Y'); ?> <strong><?php echo COLLEGE_NAME; ?></strong>. All rights reserved.
-            </div>
-            <div>
-                Practical Assessment & Laboratory Performance Management System
-            </div>
-        </footer>
-    </div><!-- /.main-content -->
-</div><!-- /.app-layout -->
+// Practical Assessment System - Page Footer Template
+// Zeal College of Engineering & Research
 
-<!-- Core JavaScript Assets -->
+$current_script = basename($_SERVER['PHP_SELF']);
+$auth_pages = ['login.php', 'forgot_password.php', 'reset_password.php', 'register.php'];
+?>
+
+<?php if (!in_array($current_script, $auth_pages)): ?>
+    </main>
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- Core JavaScript Helpers -->
 <script src="<?php echo BASE_URL; ?>assets/js/dashboard.js"></script>
 <script src="<?php echo BASE_URL; ?>assets/js/validation.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/chart.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/report.js"></script>
+
+<script>
+// Theme Toggle Switch Handling with localStorage persistence
+document.addEventListener('DOMContentLoaded', () => {
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const themeIcon = document.getElementById('themeIcon');
+  const htmlTag = document.documentElement;
+
+  function updateIcon(theme) {
+    if (themeIcon) {
+      if (theme === 'dark') {
+        themeIcon.className = 'fas fa-sun';
+      } else {
+        themeIcon.className = 'fas fa-moon';
+      }
+    }
+  }
+
+  const currentTheme = htmlTag.getAttribute('data-theme') || 'dark';
+  updateIcon(currentTheme);
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const newTheme = htmlTag.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      htmlTag.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateIcon(newTheme);
+    });
+  }
+
+  // Mobile Sidebar Toggle
+  const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+  const sidebar = document.getElementById('appSidebar');
+  if (sidebarToggleBtn && sidebar) {
+    sidebarToggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+    });
+  }
+});
+</script>
 </body>
 </html>

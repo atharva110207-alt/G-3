@@ -1,125 +1,179 @@
 <?php
-// Add New User Account
+// Practical Assessment System - Add User Controller
+// Zeal College of Engineering & Research
 
-$page_title = 'Add New User';
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/auth.php';
-require_once __DIR__ . '/../includes/functions.php';
+$page_title = "Add New User";
+require_once __DIR__ . '/../includes/header.php';
 
-require_role(['admin', 'hod']);
+// Restricted to Admin
+require_role('admin');
 
 $error = '';
+$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $role = sanitize($_POST['role'] ?? '');
     $full_name = sanitize($_POST['full_name'] ?? '');
     $email = sanitize($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? ''; // Plaintext password per requirement
-    $role = sanitize($_POST['role'] ?? 'student');
-    $student_roll_no = sanitize($_POST['student_roll_no'] ?? '');
-    $division = sanitize($_POST['division'] ?? '');
+    $password = trim($_POST['password'] ?? '');
     $phone = sanitize($_POST['phone'] ?? '');
+    
+    // Dynamic fields for Student / Parent
+    $student_roll_no = sanitize($_POST['student_roll_no'] ?? '');
+    $zprn = sanitize($_POST['zprn'] ?? '');
+    $class = sanitize($_POST['class'] ?? 'TY');
+    $division = sanitize($_POST['division'] ?? 'Division C');
 
-    if (empty($full_name) || empty($email) || empty($password) || empty($role)) {
-        $error = 'Please complete all required fields.';
+    if (empty($role) || empty($email) || empty($password)) {
+        $error = "Role, Email, and Password are required fields.";
     } else {
-        // Check duplicate email
-        $chk_sql = "SELECT id FROM users WHERE email = ? LIMIT 1";
-        $chk_stmt = execute_prepared($conn, $chk_sql, "s", [$email]);
-        if ($chk_stmt && mysqli_stmt_fetch($chk_stmt)) {
-            $error = 'An account with this email address already exists.';
-            mysqli_stmt_close($chk_stmt);
-        } else {
-            if ($chk_stmt) mysqli_stmt_close($chk_stmt);
+        // Handle name if empty for student/parent
+        if (empty($full_name)) {
+            $full_name = ($role === 'student') ? "Student " . $student_roll_no : "Parent (" . $student_roll_no . ")";
+        }
 
-            $ins_sql = "INSERT INTO users (full_name, email, password, role, student_roll_no, division, phone) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            $ins_stmt = execute_prepared($conn, $ins_sql, "sssssss", [
-                $full_name, $email, $password, $role,
-                !empty($student_roll_no) ? $student_roll_no : null,
-                !empty($division) ? $division : null,
-                !empty($phone) ? $phone : null
+        // Check duplicate email
+        $check_sql = "SELECT id FROM users WHERE email = ?";
+        $check_stmt = execute_prepared($conn, $check_sql, "s", [$email]);
+        if ($check_stmt) {
+            $res = mysqli_stmt_get_result($check_stmt);
+            if (mysqli_num_rows($res) > 0) {
+                $error = "A user account with this email address already exists.";
+            }
+            mysqli_stmt_close($check_stmt);
+        }
+
+        if (empty($error)) {
+            $insert_sql = "INSERT INTO users (full_name, email, password, role, student_roll_no, zprn, class, division, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt = execute_prepared($conn, $insert_sql, "sssssssss", [
+                $full_name, $email, $password, $role, 
+                (!empty($student_roll_no) ? $student_roll_no : null),
+                (!empty($zprn) ? $zprn : null),
+                $class, $division, $phone
             ]);
 
-            if ($ins_stmt) {
+            if ($stmt) {
                 $new_id = mysqli_insert_id($conn);
-                mysqli_stmt_close($ins_stmt);
+                mysqli_stmt_close($stmt);
 
-                log_audit($conn, $_SESSION['user_id'], 'Created User Account', 'users', "Created $role account for $full_name ($email)");
-                set_flash('success', "User account for $full_name ($role) created successfully!");
+                log_audit($conn, $user['id'], $user['role'], 'Create User', 'user_management', 'Created new ' . get_role_label($role) . ': ' . $email);
+                set_flash('success', get_role_label($role) . ' account created successfully!');
                 header('Location: manage_user.php');
                 exit();
             } else {
-                $error = 'Failed to create user account. Please try again.';
+                $error = "Failed to create user record in database.";
             }
         }
     }
 }
-
-include __DIR__ . '/../includes/header.php';
 ?>
 
-<div class="card" style="max-width: 650px; margin: 0 auto;">
-    <div class="card-header">
-        <h2 class="card-title">Add New System User</h2>
-        <a href="manage_user.php" class="btn btn-secondary btn-sm">⬅️ Back to Users</a>
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-user-plus text-primary me-2"></i> Add New User Account</h3>
+    <a href="manage_user.php" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i> Back to Users</a>
+  </div>
+
+  <?php if (!empty($error)): ?>
+    <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i> <?php echo sanitize($error); ?></div>
+  <?php endif; ?>
+
+  <form method="POST" action="" id="addUserForm">
+    <div class="form-group">
+      <label for="role" class="form-label">System Role <span class="text-danger">*</span></label>
+      <select id="role" name="role" class="form-select" required onchange="toggleRoleFields(this.value)">
+        <option value="">-- Select System Role --</option>
+        <option value="admin">System Administrator</option>
+        <option value="hod">HOD (Head of Department)</option>
+        <option value="gfm">GFM (Guardian Faculty Member)</option>
+        <option value="faculty">Subject Faculty</option>
+        <option value="student">Student</option>
+        <option value="parent">Parent</option>
+      </select>
     </div>
 
-    <?php if ($error): ?>
-        <div class="alert alert-danger"><?php echo $error; ?></div>
-    <?php endif; ?>
+    <!-- General Staff Fields (Admin/HOD/GFM/Subject Faculty) -->
+    <div id="staffFieldsGroup">
+      <div class="form-group">
+        <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+        <input type="text" id="full_name" name="full_name" class="form-control" placeholder="e.g. Prof. John Smith">
+      </div>
+    </div>
 
-    <form action="" method="POST">
+    <!-- Student / Parent Specific Dynamic Toggle Fields -->
+    <div id="studentParentFieldsGroup" style="display: none;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
         <div class="form-group">
-            <label class="form-label">Full Name *</label>
-            <input type="text" name="full_name" class="form-control" required placeholder="e.g. Prof. R. K. Sharma">
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Email Address *</label>
-            <input type="email" name="email" class="form-control" required placeholder="e.g. user@zcoer.edu.in">
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Password * (Plain Text per System Rules)</label>
-            <input type="text" name="password" class="form-control" required placeholder="Assign initial password">
+          <label for="student_roll_no" class="form-label">Roll Number <span class="text-danger">*</span></label>
+          <input type="text" id="student_roll_no" name="student_roll_no" class="form-control" placeholder="e.g. EC1301">
         </div>
 
         <div class="form-group">
-            <label class="form-label">Institutional Role *</label>
-            <select name="role" class="form-select" required>
-                <option value="student">Student</option>
-                <option value="faculty">Faculty</option>
-                <option value="gfm">GFM (Group Faculty Mentor)</option>
-                <option value="hod">HOD (Head of Department)</option>
-                <option value="parent">Parent</option>
-                <option value="admin">Administrator</option>
-            </select>
+          <label for="zprn" class="form-label">ZPRN (Zeal PRN Number)</label>
+          <input type="text" id="zprn" name="zprn" class="form-control" placeholder="e.g. ZPRN20261301">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label for="class" class="form-label">Academic Class</label>
+          <select id="class" name="class" class="form-select">
+            <option value="FY">FY (First Year)</option>
+            <option value="SY">SY (Second Year)</option>
+            <option value="TY" selected>TY (Third Year)</option>
+            <option value="BY">BY (B.E. Final Year)</option>
+          </select>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Student Roll Number (If Student/Parent)</label>
-            <input type="text" name="student_roll_no" class="form-control" placeholder="e.g. EC1301">
+          <label for="division" class="form-label">Division</label>
+          <select id="division" name="division" class="form-select">
+            <option value="Division A">Division A</option>
+            <option value="Division B">Division B</option>
+            <option value="Division C" selected>Division C</option>
+            <option value="Division D">Division D</option>
+          </select>
         </div>
+      </div>
+    </div>
 
-        <div class="form-group">
-            <label class="form-label">Division (If Student/GFM)</label>
-            <select name="division" class="form-select">
-                <option value="">-- Select Division --</option>
-                <option value="Division C" selected>Division C</option>
-                <option value="Division A">Division A</option>
-                <option value="Division B">Division B</option>
-            </select>
-        </div>
+    <!-- Common Login & Contact Fields -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+        <input type="email" id="email" name="email" class="form-control" placeholder="e.g. user@zcoer.edu.in" required>
+      </div>
 
-        <div class="form-group">
-            <label class="form-label">Phone Number</label>
-            <input type="text" name="phone" class="form-control" placeholder="10-digit mobile number">
-        </div>
+      <div class="form-group">
+        <label for="phone" class="form-label">Mobile Number</label>
+        <input type="text" id="phone" name="phone" class="form-control" placeholder="e.g. 9876543210">
+      </div>
+    </div>
 
-        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center;">Save User Account</button>
-            <a href="manage_user.php" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
+    <div class="form-group">
+      <label for="password" class="form-label">Account Password (PLAIN TEXT) <span class="text-danger">*</span></label>
+      <input type="password" id="password" name="password" class="form-control" placeholder="Enter user password" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-check-circle me-2"></i> Save & Create User Account
+    </button>
+  </form>
 </div>
+
+<script>
+function toggleRoleFields(role) {
+  const staffGroup = document.getElementById('staffFieldsGroup');
+  const studentParentGroup = document.getElementById('studentParentFieldsGroup');
+  
+  if (role === 'student' || role === 'parent') {
+    studentParentGroup.style.display = 'block';
+    staffGroup.style.display = 'block'; // Keep optional name field
+  } else {
+    studentParentGroup.style.display = 'none';
+    staffGroup.style.display = 'block';
+  }
+}
+</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

@@ -1,225 +1,132 @@
 <?php
-// Admin & HOD Master Dashboard
+// Practical Assessment System - Admin Control Dashboard
+// Zeal College of Engineering & Research
 
-$page_title = 'Admin Dashboard';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/auth.php';
-require_once __DIR__ . '/../../includes/functions.php';
+$page_title = "Admin Dashboard";
+require_once __DIR__ . '/../../includes/header.php';
 
-require_role(['admin', 'hod']);
+require_role('admin');
 
-$msg = '';
-$err = '';
+// Metrics Queries
+$total_users = 0;
+$res = mysqli_query($conn, "SELECT COUNT(*) as cnt FROM users");
+if ($res && $r = mysqli_fetch_assoc($res)) { $total_users = $r['cnt']; }
 
-// Handle Automated Batch Creation POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_create_batches'])) {
-    $division = sanitize($_POST['division'] ?? 'Division C');
-    $prefix = sanitize($_POST['prefix'] ?? 'C');
-    $start_num = intval($_POST['start_num'] ?? 1301);
-    $end_num = intval($_POST['end_num'] ?? 1320);
-    $batch_size = intval($_POST['batch_size'] ?? 10);
-    $roll_prefix = sanitize($_POST['roll_prefix'] ?? 'EC');
-    $academic_year = sanitize($_POST['academic_year'] ?? ACADEMIC_YEAR);
+$total_batches = 0;
+$res = mysqli_query($conn, "SELECT COUNT(*) as cnt FROM batches");
+if ($res && $r = mysqli_fetch_assoc($res)) { $total_batches = $r['cnt']; }
 
-    if ($start_num > 0 && $end_num >= $start_num && $batch_size > 0) {
-        $count = auto_generate_batches($conn, $division, $prefix, $start_num, $end_num, $batch_size, $roll_prefix, $academic_year);
-        log_audit($conn, $_SESSION['user_id'], 'Automated Batch Creation', 'batches', "Auto-created $count batches for $division ($roll_prefix$start_num to $roll_prefix$end_num)");
-        set_flash('success', "Successfully generated $count batches for $division!");
-        header('Location: admin_dashboard.php');
-        exit();
-    } else {
-        $err = 'Invalid roll number range or batch size entered.';
+$total_allocations = 0;
+$res = mysqli_query($conn, "SELECT COUNT(*) as cnt FROM faculty_allocations");
+if ($res && $r = mysqli_fetch_assoc($res)) { $total_allocations = $r['cnt']; }
+
+$total_logs = 0;
+$res = mysqli_query($conn, "SELECT COUNT(*) as cnt FROM audit_logs");
+if ($res && $r = mysqli_fetch_assoc($res)) { $total_logs = $r['cnt']; }
+
+// Fetch Recent Audit Logs
+$recent_logs = [];
+$log_sql = "SELECT a.*, u.full_name FROM audit_logs a LEFT JOIN users u ON a.user_id = u.id ORDER BY a.timestamp DESC LIMIT 8";
+$log_res = mysqli_query($conn, $log_sql);
+if ($log_res) {
+    while ($row = mysqli_fetch_assoc($log_res)) {
+        $recent_logs[] = $row;
     }
 }
-
-// Handle Faculty Allocation POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_allocate_faculty'])) {
-    $faculty_id = intval($_POST['faculty_id'] ?? 0);
-    $subject_name = sanitize($_POST['subject_name'] ?? '');
-    $division = sanitize($_POST['division'] ?? 'Division C');
-    $batch_id = intval($_POST['batch_id'] ?? 0);
-    $academic_year = sanitize($_POST['academic_year'] ?? ACADEMIC_YEAR);
-
-    if ($faculty_id && !empty($subject_name) && $batch_id) {
-        $sql = "INSERT INTO faculty_allocations (faculty_id, subject_name, division, batch_id, academic_year) VALUES (?, ?, ?, ?, ?)";
-        $stmt = execute_prepared($conn, $sql, "issis", [$faculty_id, $subject_name, $division, $batch_id, $academic_year]);
-        if ($stmt) {
-            mysqli_stmt_close($stmt);
-            log_audit($conn, $_SESSION['user_id'], 'Allocated Faculty', 'faculty_allocations', "Allocated Faculty #$faculty_id to $subject_name ($division, Batch #$batch_id)");
-            set_flash('success', 'Faculty practical allocation updated successfully!');
-            header('Location: admin_dashboard.php');
-            exit();
-        }
-    } else {
-        $err = 'All allocation fields are required.';
-    }
-}
-
-// Fetch System Counts
-$user_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as cnt FROM users"))['cnt'] ?? 0;
-$student_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as cnt FROM users WHERE role = 'student'"))['cnt'] ?? 0;
-$faculty_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as cnt FROM users WHERE role = 'faculty'"))['cnt'] ?? 0;
-$batch_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as cnt FROM batches"))['cnt'] ?? 0;
-$pract_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as cnt FROM practicals"))['cnt'] ?? 0;
-$assess_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as cnt FROM assessment"))['cnt'] ?? 0;
-
-// Fetch Batches & Faculty for Forms
-$batches_res = mysqli_query($conn, "SELECT * FROM batches ORDER BY batch_name ASC");
-$faculty_res = mysqli_query($conn, "SELECT id, full_name FROM users WHERE role = 'faculty' ORDER BY full_name ASC");
-
-include __DIR__ . '/../../includes/header.php';
 ?>
 
-<!-- Statistics Overview -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon">👥</div>
-        <div class="stat-content">
-            <div class="stat-value"><?php echo $user_count; ?></div>
-            <div class="stat-label">Total Accounts</div>
-        </div>
+<!-- Glassmorphic Stat Cards Grid -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-users"></i></div>
+    <div class="stat-info">
+      <h3><?php echo $total_users; ?></h3>
+      <p>Registered Users</p>
     </div>
+  </div>
 
-    <div class="stat-card">
-        <div class="stat-icon">🎓</div>
-        <div class="stat-content">
-            <div class="stat-value"><?php echo $student_count; ?></div>
-            <div class="stat-label">Enrolled Students</div>
-        </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;"><i class="fas fa-layer-group"></i></div>
+    <div class="stat-info">
+      <h3><?php echo $total_batches; ?></h3>
+      <p>Manual Batches</p>
     </div>
+  </div>
 
-    <div class="stat-card">
-        <div class="stat-icon">👨‍🏫</div>
-        <div class="stat-content">
-            <div class="stat-value"><?php echo $faculty_count; ?></div>
-            <div class="stat-label">Faculty Members</div>
-        </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;"><i class="fas fa-tasks"></i></div>
+    <div class="stat-info">
+      <h3><?php echo $total_allocations; ?></h3>
+      <p>Subject Allocations</p>
     </div>
+  </div>
 
-    <div class="stat-card">
-        <div class="stat-icon">🧪</div>
-        <div class="stat-content">
-            <div class="stat-value"><?php echo $pract_count; ?></div>
-            <div class="stat-label">Scheduled Practicals</div>
-        </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;"><i class="fas fa-shield-alt"></i></div>
+    <div class="stat-info">
+      <h3><?php echo $total_logs; ?></h3>
+      <p>Audit Events</p>
     </div>
+  </div>
 </div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem;">
-    <!-- Automated Batch Creation Module -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">⚡ Automated Batch Generator</h3>
-            <span class="badge badge-info">Auto-Split Division</span>
-        </div>
-
-        <form action="" method="POST">
-            <input type="hidden" name="action_create_batches" value="1">
-            
-            <div class="form-group">
-                <label class="form-label">Target Division *</label>
-                <select name="division" class="form-select" required>
-                    <option value="Division C" selected>Division C</option>
-                    <option value="Division A">Division A</option>
-                    <option value="Division B">Division B</option>
-                </select>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="form-group">
-                    <label class="form-label">Roll Number Prefix</label>
-                    <input type="text" name="roll_prefix" class="form-control" value="EC" required placeholder="e.g. EC">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Batch Name Prefix</label>
-                    <input type="text" name="prefix" class="form-control" value="C" required placeholder="e.g. C">
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
-                <div class="form-group">
-                    <label class="form-label">Start Roll #</label>
-                    <input type="number" name="start_num" class="form-control" value="1301" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">End Roll #</label>
-                    <input type="number" name="end_num" class="form-control" value="1320" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Batch Size</label>
-                    <input type="number" name="batch_size" class="form-control" value="10" required>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
-                🚀 Auto-Generate Division Batches
-            </button>
-        </form>
-    </div>
-
-    <!-- Practical Session Allocation Module -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">📌 Faculty Subject & Batch Allocation</h3>
-            <span class="badge badge-success">Academic Assignment</span>
-        </div>
-
-        <form action="" method="POST">
-            <input type="hidden" name="action_allocate_faculty" value="1">
-
-            <div class="form-group">
-                <label class="form-label">Select Faculty Member *</label>
-                <select name="faculty_id" class="form-select" required>
-                    <option value="">-- Choose Faculty --</option>
-                    <?php if ($faculty_res): while ($f = mysqli_fetch_assoc($faculty_res)): ?>
-                        <option value="<?php echo $f['id']; ?>"><?php echo sanitize($f['full_name']); ?></option>
-                    <?php endwhile; endif; ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Practical Subject Name *</label>
-                <input type="text" name="subject_name" class="form-control" placeholder="e.g. Microprocessors & Microcontrollers" required>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="form-group">
-                    <label class="form-label">Division</label>
-                    <select name="division" class="form-select" required>
-                        <option value="Division C" selected>Division C</option>
-                        <option value="Division A">Division A</option>
-                        <option value="Division B">Division B</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Target Batch *</label>
-                    <select name="batch_id" class="form-select" required>
-                        <option value="">-- Select Batch --</option>
-                        <?php if ($batches_res): while ($b = mysqli_fetch_assoc($batches_res)): ?>
-                            <option value="<?php echo $b['id']; ?>"><?php echo sanitize($b['batch_name'] . ' (' . $b['start_roll'] . ' - ' . $b['end_roll'] . ')'); ?></option>
-                        <?php endwhile; endif; ?>
-                    </select>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-accent" style="width: 100%; justify-content: center;">
-                Assign Faculty Allocation
-            </button>
-        </form>
-    </div>
+<!-- Admin Quick Action Tools -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-tools text-primary me-2"></i> System Administration Control Panel</h3>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+    <a href="<?php echo BASE_URL; ?>admin/manage_user.php" class="btn btn-secondary" style="justify-content: center; padding: 1rem;">
+      <i class="fas fa-users-cog fa-lg me-2 text-primary"></i> Manage User Accounts
+    </a>
+    <a href="<?php echo BASE_URL; ?>admin/create_batches.php" class="btn btn-secondary" style="justify-content: center; padding: 1rem;">
+      <i class="fas fa-layer-group fa-lg me-2 text-accent"></i> Manual Batch Creation
+    </a>
+    <a href="<?php echo BASE_URL; ?>admin/allocations.php" class="btn btn-secondary" style="justify-content: center; padding: 1rem;">
+      <i class="fas fa-tasks fa-lg me-2 style-success"></i> Subject Allocation
+    </a>
+    <a href="<?php echo BASE_URL; ?>admin/audit_logs.php" class="btn btn-secondary" style="justify-content: center; padding: 1rem;">
+      <i class="fas fa-shield-alt fa-lg me-2 style-warning"></i> View System Audit Logs
+    </a>
+    <a href="<?php echo BASE_URL; ?>admin/backup.php?download=pdf" target="_blank" class="btn btn-primary" style="justify-content: center; padding: 1rem;">
+      <i class="fas fa-file-pdf fa-lg me-2"></i> 1-Click Database PDF Backup
+    </a>
+  </div>
 </div>
 
-<!-- Quick System Management Shortcuts -->
+<!-- Recent System Audit Logs Table -->
 <div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Quick Administration Tools</h3>
-    </div>
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <a href="../../admin/manage_user.php" class="btn btn-secondary">👥 User Accounts Directory</a>
-        <a href="../../modules/practical_management/create_practical.php" class="btn btn-secondary">🧪 Schedule Practical Sessions</a>
-        <a href="../../admin/audit_logs.php" class="btn btn-secondary">📜 Audit Logs & Overrides</a>
-        <a href="../../reports/final_marksheet.php" class="btn btn-primary">📋 Consolidated Term-Work Marksheet</a>
-    </div>
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-history text-primary me-2"></i> Recent System Activity Audit Logs</h3>
+    <a href="<?php echo BASE_URL; ?>admin/audit_logs.php" class="btn btn-secondary btn-sm">View All Logs</a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>User</th>
+          <th>Role</th>
+          <th>Action</th>
+          <th>Module</th>
+          <th>IP Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($recent_logs as $log): ?>
+          <tr>
+            <td><?php echo date('d M Y, H:i:s', strtotime($log['timestamp'])); ?></td>
+            <td><strong><?php echo sanitize($log['full_name'] ?: 'System'); ?></strong></td>
+            <td><span class="badge badge-info"><?php echo get_role_label($log['user_role']); ?></span></td>
+            <td><?php echo sanitize($log['action_performed']); ?></td>
+            <td><span class="badge badge-secondary"><?php echo sanitize($log['target_module']); ?></span></td>
+            <td><code><?php echo sanitize($log['IP_address']); ?></code></td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

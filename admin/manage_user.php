@@ -1,17 +1,17 @@
 <?php
-// User Management Center - Admin & HOD Access
+// Practical Assessment System - User Management & CRUD Dashboard
+// Zeal College of Engineering & Research
 
-$page_title = 'User Management';
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/auth.php';
-require_once __DIR__ . '/../includes/functions.php';
+$page_title = "User Management";
+require_once __DIR__ . '/../includes/header.php';
 
-require_role(['admin', 'hod']);
+// Restricted to Admin
+require_role('admin');
 
 $role_filter = sanitize($_GET['role'] ?? '');
-$search = sanitize($_GET['search'] ?? '');
+$search_query = sanitize($_GET['search'] ?? '');
 
-$sql = "SELECT id, full_name, email, role, student_roll_no, division, phone, created_at FROM users WHERE 1=1";
+$sql = "SELECT id, full_name, email, password, role, student_roll_no, zprn, class, division, phone, created_at FROM users WHERE 1=1";
 $params = [];
 $types = "";
 
@@ -21,106 +21,114 @@ if (!empty($role_filter)) {
     $types .= "s";
 }
 
-if (!empty($search)) {
-    $sql .= " AND (full_name LIKE ? OR email LIKE ? OR student_roll_no LIKE ?)";
-    $search_param = "%$search%";
-    $params[] = $search_param;
-    $params[] = $search_param;
-    $params[] = $search_param;
-    $types .= "sss";
+if (!empty($search_query)) {
+    $sql .= " AND (full_name LIKE ? OR email LIKE ? OR student_roll_no LIKE ? OR zprn LIKE ?)";
+    $like = "%" . $search_query . "%";
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+    $types .= "ssss";
 }
 
 $sql .= " ORDER BY id DESC";
-
 $stmt = execute_prepared($conn, $sql, $types, $params);
-$users_result = $stmt ? mysqli_stmt_get_result($stmt) : false;
-
-include __DIR__ . '/../includes/header.php';
+$users_list = [];
+if ($stmt) {
+    $res = mysqli_stmt_get_result($stmt);
+    while ($row = mysqli_fetch_assoc($res)) {
+        $users_list[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+}
 ?>
 
 <div class="card">
-    <div class="card-header">
-        <div>
-            <h2 class="card-title">User Management Directory</h2>
-            <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">View and manage system accounts across all institutional roles</p>
-        </div>
-        <a href="add_user.php" class="btn btn-primary">➕ Create New User Account</a>
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-users-cog text-primary me-2"></i> User Accounts Registry</h3>
+    <div>
+      <a href="add_user.php" class="btn btn-primary btn-sm"><i class="fas fa-user-plus me-1"></i> Add New User</a>
+      <a href="create_batches.php" class="btn btn-accent btn-sm ms-2"><i class="fas fa-layer-group me-1"></i> Create Batches</a>
+    </div>
+  </div>
+
+  <!-- Search & Role Filter Bar -->
+  <form method="GET" action="" class="action-bar">
+    <div class="search-wrapper">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" name="search" class="form-control search-input" placeholder="Search name, email, roll no, zprn..." value="<?php echo sanitize($search_query); ?>">
     </div>
 
-    <!-- Filter Tabs & Search Bar -->
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <a href="manage_user.php" class="btn btn-sm <?php echo empty($role_filter) ? 'btn-primary' : 'btn-secondary'; ?>">All Users</a>
-            <a href="manage_user.php?role=student" class="btn btn-sm <?php echo $role_filter === 'student' ? 'btn-primary' : 'btn-secondary'; ?>">Students</a>
-            <a href="manage_user.php?role=faculty" class="btn btn-sm <?php echo $role_filter === 'faculty' ? 'btn-primary' : 'btn-secondary'; ?>">Faculty</a>
-            <a href="manage_user.php?role=gfm" class="btn btn-sm <?php echo $role_filter === 'gfm' ? 'btn-primary' : 'btn-secondary'; ?>">GFMs</a>
-            <a href="manage_user.php?role=hod" class="btn btn-sm <?php echo $role_filter === 'hod' ? 'btn-primary' : 'btn-secondary'; ?>">HODs</a>
-            <a href="manage_user.php?role=parent" class="btn btn-sm <?php echo $role_filter === 'parent' ? 'btn-primary' : 'btn-secondary'; ?>">Parents</a>
-        </div>
-
-        <form action="" method="GET" style="display: flex; gap: 0.5rem;">
-            <?php if ($role_filter): ?>
-                <input type="hidden" name="role" value="<?php echo $role_filter; ?>">
-            <?php endif; ?>
-            <input type="text" name="search" class="form-control" placeholder="Search by name, email, roll..." value="<?php echo $search; ?>" style="width: 240px;">
-            <button type="submit" class="btn btn-secondary">Search</button>
-        </form>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <select name="role" class="form-select" style="width: auto;" onchange="this.form.submit()">
+        <option value="">All Roles</option>
+        <option value="admin" <?php echo $role_filter === 'admin' ? 'selected' : ''; ?>>System Admin</option>
+        <option value="hod" <?php echo $role_filter === 'hod' ? 'selected' : ''; ?>>HOD</option>
+        <option value="gfm" <?php echo $role_filter === 'gfm' ? 'selected' : ''; ?>>GFM</option>
+        <option value="faculty" <?php echo $role_filter === 'faculty' ? 'selected' : ''; ?>>Subject Faculty</option>
+        <option value="student" <?php echo $role_filter === 'student' ? 'selected' : ''; ?>>Student</option>
+        <option value="parent" <?php echo $role_filter === 'parent' ? 'selected' : ''; ?>>Parent</option>
+      </select>
+      <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
     </div>
+  </form>
 
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Full Name</th>
-                    <th>Email Address</th>
-                    <th>Role</th>
-                    <th>Roll Number</th>
-                    <th>Division</th>
-                    <th>Phone</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($users_result && mysqli_num_rows($users_result) > 0): ?>
-                    <?php while ($row = mysqli_fetch_assoc($users_result)): ?>
-                        <tr>
-                            <td>#<?php echo $row['id']; ?></td>
-                            <td><strong><?php echo sanitize($row['full_name']); ?></strong></td>
-                            <td><?php echo sanitize($row['email']); ?></td>
-                            <td>
-                                <span class="badge badge-<?php 
-                                    switch($row['role']) {
-                                        case 'admin': echo 'danger'; break;
-                                        case 'hod': echo 'warning'; break;
-                                        case 'faculty': echo 'info'; break;
-                                        case 'gfm': echo 'info'; break;
-                                        case 'student': echo 'success'; break;
-                                        default: echo 'secondary';
-                                    }
-                                ?>">
-                                    <?php echo strtoupper($row['role']); ?>
-                                </span>
-                            </td>
-                            <td><?php echo $row['student_roll_no'] ? sanitize($row['student_roll_no']) : '-'; ?></td>
-                            <td><?php echo $row['division'] ? sanitize($row['division']) : '-'; ?></td>
-                            <td><?php echo $row['phone'] ? sanitize($row['phone']) : '-'; ?></td>
-                            <td>
-                                <div style="display: flex; gap: 0.375rem;">
-                                    <a href="edit_user.php?id=<?php echo $row['id']; ?>" class="btn btn-secondary btn-sm">Edit</a>
-                                    <a href="delete_user.php?id=<?php echo $row['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">No user accounts found matching your query.</td>
-                    </tr>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#ID</th>
+          <th>Full Name / Roll No</th>
+          <th>Role</th>
+          <th>Email</th>
+          <th>Password (Plain)</th>
+          <th>Class & Div</th>
+          <th>ZPRN</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (empty($users_list)): ?>
+          <tr>
+            <td colspan="8" class="text-center" style="padding: 2rem; color: var(--text-muted);">
+              <i class="fas fa-folder-open fa-2x mb-2"></i><br>No user accounts matched the filter criteria.
+            </td>
+          </tr>
+        <?php else: ?>
+          <?php foreach ($users_list as $u): ?>
+            <tr>
+              <td>#<?php echo $u['id']; ?></td>
+              <td>
+                <strong style="color: var(--text-primary);"><?php echo sanitize($u['full_name']); ?></strong>
+                <?php if (!empty($u['student_roll_no'])): ?>
+                  <br><span class="badge badge-info"><?php echo sanitize($u['student_roll_no']); ?></span>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+              </td>
+              <td>
+                <span class="badge badge-<?php 
+                  echo ($u['role'] === 'admin' ? 'danger' : 
+                       ($u['role'] === 'hod' ? 'warning' : 
+                       ($u['role'] === 'faculty' ? 'success' : 'info'))); 
+                ?>">
+                  <?php echo get_role_label($u['role']); ?>
+                </span>
+              </td>
+              <td><?php echo sanitize($u['email']); ?></td>
+              <td><code style="background: rgba(0,0,0,0.3); padding: 0.2rem 0.5rem; border-radius: 4px; color: #38bdf8;"><?php echo sanitize($u['password']); ?></code></td>
+              <td><?php echo sanitize(($u['class'] ?? 'TY') . ' - ' . ($u['division'] ?? '-')); ?></td>
+              <td><?php echo sanitize($u['zprn'] ?? '-'); ?></td>
+              <td>
+                <a href="edit_user.php?id=<?php echo $u['id']; ?>" class="btn btn-secondary btn-sm" title="Edit User"><i class="fas fa-edit"></i></a>
+                <?php if ($u['id'] != $user['id']): ?>
+                  <a href="delete_user.php?id=<?php echo $u['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete user <?php echo sanitize($u['full_name']); ?>?');" title="Delete User"><i class="fas fa-trash"></i></a>
+                <?php endif; ?>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

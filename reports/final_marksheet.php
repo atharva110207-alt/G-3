@@ -1,117 +1,152 @@
 <?php
-// Consolidated Term-Work Final Marksheet Report (Out of 25 / 50)
+// Practical Assessment System - Term-Work Final Marksheet Generator
+// Zeal College of Engineering & Research
 
-$page_title = 'Final Term-Work Marksheet';
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../config/auth.php';
-require_once __DIR__ . '/../includes/functions.php';
+$page_title = "Final Termwork Marksheet";
+require_once __DIR__ . '/../includes/header.php';
 
-require_login();
+$class_filter = $_SESSION['class_filter'] ?? 'TY';
+$division_filter = $_GET['division'] ?? 'Division C';
+$subject_filter = $_GET['subject'] ?? 'Microprocessors & Microcontrollers';
 
-$division = sanitize($_GET['division'] ?? 'Division C');
+// Fetch Students in Division & Class
+$st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
+$st_stmt = execute_prepared($conn, $st_sql, "ss", [$class_filter, $division_filter]);
+$students = [];
+if ($st_stmt) {
+    $res = mysqli_stmt_get_result($st_stmt);
+    while ($r = mysqli_fetch_assoc($res)) {
+        $students[] = $r;
+    }
+    mysqli_stmt_close($st_stmt);
+}
 
-// Query all students in Division C with experiment score averages
-$sql = "SELECT u.id, u.student_roll_no, u.full_name, b.batch_name,
-        COUNT(ass.id) as exp_evaluated,
-        SUM(ass.total_score) as sum_obtained,
-        AVG(ass.total_score) as avg_score_25
-        FROM users u 
-        LEFT JOIN batches b ON u.division = b.division 
-             AND CAST(SUBSTRING(u.student_roll_no, 3) AS UNSIGNED) >= CAST(SUBSTRING(b.start_roll, 3) AS UNSIGNED)
-             AND CAST(SUBSTRING(u.student_roll_no, 3) AS UNSIGNED) <= CAST(SUBSTRING(b.end_roll, 3) AS UNSIGNED)
-        LEFT JOIN assessment ass ON ass.student_id = u.id
-        WHERE u.role = 'student' AND u.division = ?
-        GROUP BY u.id
-        ORDER BY u.student_roll_no ASC";
+// Fetch Experiments for Subject
+$exp_sql = "SELECT id, exp_no, title FROM practicals WHERE subject_name = ? AND division = ? ORDER BY exp_no ASC";
+$exp_stmt = execute_prepared($conn, $exp_sql, "ss", [$subject_filter, $division_filter]);
+$experiments = [];
+if ($exp_stmt) {
+    $res = mysqli_stmt_get_result($exp_stmt);
+    while ($ex = mysqli_fetch_assoc($res)) {
+        $experiments[] = $ex;
+    }
+    mysqli_stmt_close($exp_stmt);
+}
 
-$stmt = execute_prepared($conn, $sql, "s", [$division]);
-$result = $stmt ? mysqli_stmt_get_result($stmt) : false;
-
-include __DIR__ . '/../includes/header.php';
+// Fetch Assessment Matrix
+$assessment_matrix = [];
+if (!empty($experiments)) {
+    $ass_sql = "SELECT a.student_id, a.practical_id, a.total_score FROM assessment a JOIN practicals p ON a.practical_id = p.id WHERE p.subject_name = ?";
+    $ass_stmt = execute_prepared($conn, $ass_sql, "s", [$subject_filter]);
+    if ($ass_stmt) {
+        $res = mysqli_stmt_get_result($ass_stmt);
+        while ($ar = mysqli_fetch_assoc($res)) {
+            $assessment_matrix[$ar['student_id']][$ar['practical_id']] = $ar['total_score'];
+        }
+        mysqli_stmt_close($ass_stmt);
+    }
+}
 ?>
 
+<div class="card mb-4">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title"><i class="fas fa-file-invoice text-primary me-2"></i> Final Term-Work Marksheet & Evaluation Summary</h3>
+      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
+        <?php echo COLLEGE_NAME; ?> &bull; <?php echo DEPARTMENT_NAME; ?>
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="<?php echo BASE_URL; ?>reports/export_excel.php?subject=<?php echo urlencode($subject_filter); ?>&division=<?php echo urlencode($division_filter); ?>" class="btn btn-accent btn-sm">
+        <i class="fas fa-file-excel me-1"></i> Export to Excel (.csv)
+      </a>
+      <a href="<?php echo BASE_URL; ?>reports/export_pdf.php?subject=<?php echo urlencode($subject_filter); ?>&division=<?php echo urlencode($division_filter); ?>" target="_blank" class="btn btn-primary btn-sm">
+        <i class="fas fa-file-pdf me-1"></i> Download PDF
+      </a>
+    </div>
+  </div>
+
+  <form method="GET" action="" class="action-bar" style="margin-bottom: 0;">
+    <div style="display: flex; gap: 1rem; width: 100%; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 220px;">
+        <label for="subject" class="form-label">Subject</label>
+        <select id="subject" name="subject" class="form-select" onchange="this.form.submit()">
+          <option value="Microprocessors & Microcontrollers" <?php echo $subject_filter === 'Microprocessors & Microcontrollers' ? 'selected' : ''; ?>>Microprocessors & Microcontrollers</option>
+          <option value="Digital Signal Processing" <?php echo $subject_filter === 'Digital Signal Processing' ? 'selected' : ''; ?>>Digital Signal Processing</option>
+          <option value="VLSI Design & Embedded Systems" <?php echo $subject_filter === 'VLSI Design & Embedded Systems' ? 'selected' : ''; ?>>VLSI Design & Embedded Systems</option>
+        </select>
+      </div>
+
+      <div style="width: 180px;">
+        <label for="division" class="form-label">Division</label>
+        <select id="division" name="division" class="form-select" onchange="this.form.submit()">
+          <option value="Division A" <?php echo $division_filter === 'Division A' ? 'selected' : ''; ?>>Division A</option>
+          <option value="Division B" <?php echo $division_filter === 'Division B' ? 'selected' : ''; ?>>Division B</option>
+          <option value="Division C" <?php echo $division_filter === 'Division C' ? 'selected' : ''; ?>>Division C</option>
+        </select>
+      </div>
+    </div>
+  </form>
+</div>
+
 <div class="card">
-    <div class="card-header no-print">
-        <div>
-            <h2 class="card-title">Consolidated Term-Work Marksheet (<?php echo sanitize($division); ?>)</h2>
-            <p style="font-size: 0.875rem; color: var(--text-muted);">Normalized Term-Work Scores out of 25 & 50 Marks for Academic Submission</p>
-        </div>
-        <div style="display: flex; gap: 0.5rem;">
-            <a href="export_excel.php?division=<?php echo urlencode($division); ?>" class="btn btn-secondary btn-sm">📊 Export Excel (CSV)</a>
-            <button id="printReportBtn" class="btn btn-primary btn-sm">🖨️ Print Final Sheet</button>
-        </div>
-    </div>
+  <div class="table-responsive">
+    <table class="table" style="font-size: 0.825rem;">
+      <thead>
+        <tr>
+          <th>Roll No</th>
+          <th>Student Name</th>
+          <th>ZPRN</th>
+          <?php foreach ($experiments as $ex): ?>
+            <th class="text-center" title="<?php echo sanitize($ex['title']); ?>">Exp #<?php echo $ex['exp_no']; ?></th>
+          <?php endforeach; ?>
+          <th class="text-center">Total (Max)</th>
+          <th class="text-center">Normalized (25)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (empty($students)): ?>
+          <tr><td colspan="<?php echo count($experiments) + 5; ?>" class="text-center" style="padding: 2rem; color: var(--text-muted);">No student records found.</td></tr>
+        <?php else: ?>
+          <?php foreach ($students as $st): ?>
+            <?php 
+              $st_id = $st['id'];
+              $row_total = 0;
+              $row_max = count($experiments) * 25;
+            ?>
+            <tr>
+              <td><strong class="badge badge-info" style="font-size: 0.85rem;"><?php echo sanitize($st['student_roll_no']); ?></strong></td>
+              <td><strong style="color: var(--text-primary);"><?php echo sanitize($st['full_name']); ?></strong></td>
+              <td><code><?php echo sanitize($st['zprn'] ?: '-'); ?></code></td>
+              
+              <?php foreach ($experiments as $ex): ?>
+                <?php 
+                  $score = $assessment_matrix[$st_id][$ex['id']] ?? null;
+                  if ($score !== null) { $row_total += $score; }
+                ?>
+                <td class="text-center">
+                  <?php if ($score !== null): ?>
+                    <span style="font-weight: 700; color: <?php echo $score >= 20 ? '#34d399' : ($score >= 12 ? '#fbbf24' : '#f87171'); ?>;">
+                      <?php echo $score; ?>
+                    </span>
+                  <?php else: ?>
+                    <span style="color: var(--text-muted);">-</span>
+                  <?php endif; ?>
+                </td>
+              <?php endforeach; ?>
 
-    <!-- Academic Header for Print Sheet -->
-    <div class="report-header">
-        <h2 class="report-title"><?php echo COLLEGE_NAME; ?></h2>
-        <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--text-primary); margin-top: 0.25rem;">DEPARTMENT OF ELECTRONICS & TELECOMMUNICATION ENGINEERING</h3>
-        <p style="font-weight: 600; color: var(--text-secondary); margin-top: 0.25rem;">CONTINUOUS PRACTICAL ASSESSMENT & TERM-WORK MARKSHEET - <?php echo ACADEMIC_YEAR; ?></p>
-        <span class="badge badge-info" style="margin-top: 0.5rem;"><?php echo sanitize($division); ?></span>
-    </div>
-
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Sr #</th>
-                    <th>Roll No</th>
-                    <th>Student Full Name</th>
-                    <th>Batch</th>
-                    <th>Exp Checked</th>
-                    <th>Raw Score Sum</th>
-                    <th>Avg Marks (out of 25)</th>
-                    <th>Normalized Term-Work (out of 50)</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($result && mysqli_num_rows($result) > 0): $sr = 1; ?>
-                    <?php while ($row = mysqli_fetch_assoc($result)): 
-                        $exp_cnt = intval($row['exp_evaluated']);
-                        $raw_sum = intval($row['sum_obtained'] ?? 0);
-                        $avg_25 = $row['avg_score_25'] !== null ? round($row['avg_score_25'], 2) : 0;
-                        $norm_50 = round($avg_25 * 2, 2);
-                        $is_passed = $avg_25 >= 10;
-                    ?>
-                        <tr>
-                            <td><?php echo $sr++; ?></td>
-                            <td><strong><?php echo sanitize($row['student_roll_no']); ?></strong></td>
-                            <td><?php echo sanitize($row['full_name']); ?></td>
-                            <td><span class="badge badge-info"><?php echo sanitize($row['batch_name'] ?? 'C1'); ?></span></td>
-                            <td><?php echo $exp_cnt; ?></td>
-                            <td><?php echo $raw_sum; ?></td>
-                            <td><strong style="color: var(--primary-color); font-size: 1rem;"><?php echo $avg_25; ?> / 25</strong></td>
-                            <td><strong><?php echo $norm_50; ?> / 50</strong></td>
-                            <td>
-                                <span class="badge badge-<?php echo $is_passed ? 'success' : 'danger'; ?>">
-                                    <?php echo $is_passed ? 'ACCEPTED / PASSED' : 'DEFICIENT'; ?>
-                                </span>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="9" style="text-align: center; color: var(--text-muted);">No student term-work entries found.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Official Institutional Signature Block -->
-    <div class="signature-block">
-        <div class="signature-line">
-            Subject Faculty In-Charge
-        </div>
-        <div class="signature-line">
-            Group Faculty Mentor (GFM)
-        </div>
-        <div class="signature-line">
-            Head of Department (HOD)
-        </div>
-    </div>
+              <td class="text-center"><strong style="color: var(--text-primary);"><?php echo $row_total; ?> / <?php echo $row_max ?: 25; ?></strong></td>
+              <td class="text-center">
+                <span class="badge badge-success" style="font-size: 0.9rem;">
+                  <?php echo normalize_termwork_marks($row_total, $row_max, 25); ?> / 25
+                </span>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

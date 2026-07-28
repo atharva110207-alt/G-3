@@ -1,85 +1,94 @@
 <?php
-// GFM (Group Faculty Mentor) Division Dashboard
+// Practical Assessment System - GFM (Guardian Faculty Member) Portal
+// Zeal College of Engineering & Research
 
-$page_title = 'GFM Dashboard';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/auth.php';
-require_once __DIR__ . '/../../includes/functions.php';
+$page_title = "GFM Portal";
+require_once __DIR__ . '/../../includes/header.php';
 
 require_role(['gfm', 'admin', 'hod']);
 
-$division = $_SESSION['division'] ?? 'Division C';
+$gfm_division = $user['division'] ?? 'Division C';
+$gfm_class = $_SESSION['class_filter'] ?? 'TY';
 
-// Fetch Division C Students & Attendance Summary
-$students_sql = "SELECT u.id, u.student_roll_no, u.full_name, u.email, u.phone,
-                (SELECT COUNT(*) FROM attendance a WHERE a.student_id = u.id) as total_sessions,
-                (SELECT SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) FROM attendance a WHERE a.student_id = u.id) as present_sessions,
-                (SELECT AVG(total_score) FROM assessment ass WHERE ass.student_id = u.id) as avg_score
-                FROM users u
-                WHERE u.role = 'student' AND u.division = ?
-                ORDER BY u.student_roll_no ASC";
-$stmt = execute_prepared($conn, $students_sql, "s", [$division]);
-$students_res = $stmt ? mysqli_stmt_get_result($stmt) : false;
-
-include __DIR__ . '/../../includes/header.php';
+// Fetch Students isolated to GFM Division & Class
+$sql = "SELECT id, full_name, email, student_roll_no, zprn, class, division, phone FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
+$stmt = execute_prepared($conn, $sql, "ss", [$gfm_class, $gfm_division]);
+$students = [];
+if ($stmt) {
+    $res = mysqli_stmt_get_result($stmt);
+    while ($row = mysqli_fetch_assoc($res)) {
+        $students[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+}
 ?>
 
-<div class="card">
-    <div class="card-header">
-        <div>
-            <h2 class="card-title">GFM Class Performance Dashboard (<?php echo sanitize($division); ?>)</h2>
-            <p style="font-size: 0.875rem; color: var(--text-muted);">Class-wide attendance tracking, defaulter list monitoring, and submission analytics</p>
-        </div>
-        <a href="../../reports/final_marksheet.php" class="btn btn-primary">📑 View Term-Work Sheets</a>
+<div class="card mb-4">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title"><i class="fas fa-users-class text-primary me-2"></i> GFM Division Monitor: <?php echo sanitize($gfm_class . ' - ' . $gfm_division); ?></h3>
+      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
+        Guardian Faculty Member Portal for class student monitoring, attendance overview, and roll number directory.
+      </p>
     </div>
+    <span class="badge badge-info" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+      <?php echo count($students); ?> Enrolled Students
+    </span>
+  </div>
 
-    <!-- Student Attendance & Defaulter Tracking Table -->
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Roll No</th>
-                    <th>Student Name</th>
-                    <th>Sessions Attended</th>
-                    <th>Attendance %</th>
-                    <th>Average Score (0-25)</th>
-                    <th>Status Flag</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($students_res && mysqli_num_rows($students_res) > 0): ?>
-                    <?php while ($st = mysqli_fetch_assoc($students_res)): 
-                        $total = intval($st['total_sessions'] ?? 0);
-                        $present = intval($st['present_sessions'] ?? 0);
-                        $pct = $total > 0 ? round(($present / $total) * 100, 1) : 100;
-                        $avg = $st['avg_score'] !== null ? round($st['avg_score'], 1) : '--';
-                        $is_defaulter = $pct < 75;
-                    ?>
-                        <tr style="<?php echo $is_defaulter ? 'background-color: rgba(220, 38, 38, 0.05);' : ''; ?>">
-                            <td><strong><?php echo sanitize($st['student_roll_no']); ?></strong></td>
-                            <td><?php echo sanitize($st['full_name']); ?></td>
-                            <td><?php echo $present; ?> / <?php echo $total; ?></td>
-                            <td>
-                                <strong><?php echo $pct; ?>%</strong>
-                            </td>
-                            <td><strong><?php echo $avg; ?></strong></td>
-                            <td>
-                                <?php if ($is_defaulter): ?>
-                                    <span class="badge badge-danger">⚠️ Defaulter (&lt;75%)</span>
-                                <?php else: ?>
-                                    <span class="badge badge-success">Good Standing</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-muted);">No student records found in <?php echo $division; ?>.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
+  <!-- Live Search Bar Filtering Student Profile Cards -->
+  <div class="action-bar" style="margin-bottom: 0;">
+    <div class="search-wrapper" style="max-width: 100%;">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" id="gfmStudentSearch" class="form-control search-input" placeholder="Live Search by Student Name, Roll Number, or ZPRN..." onkeyup="filterStudentCards()">
     </div>
+  </div>
 </div>
+
+<!-- Student Profile Cards Grid -->
+<div class="student-grid" id="studentCardContainer">
+  <?php if (empty($students)): ?>
+    <div class="card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">
+      <i class="fas fa-user-slash fa-3x mb-3"></i>
+      <h4>No students found registered for <?php echo sanitize($gfm_class . ' ' . $gfm_division); ?>.</h4>
+    </div>
+  <?php else: ?>
+    <?php foreach ($students as $st): ?>
+      <div class="student-card student-profile-item" data-search="<?php echo strtolower(sanitize($st['full_name'] . ' ' . $st['student_roll_no'] . ' ' . $st['zprn'])); ?>">
+        <div class="student-card-header">
+          <span class="student-roll"><i class="fas fa-id-card me-1"></i> <?php echo sanitize($st['student_roll_no']); ?></span>
+          <span class="badge badge-secondary"><?php echo sanitize($st['class']); ?></span>
+        </div>
+        <h4 class="student-name"><?php echo sanitize($st['full_name']); ?></h4>
+        <div class="student-meta">
+          <div><i class="fas fa-barcode text-accent me-1"></i> ZPRN: <strong><?php echo sanitize($st['zprn'] ?: 'N/A'); ?></strong></div>
+          <div><i class="fas fa-envelope text-muted me-1"></i> <?php echo sanitize($st['email']); ?></div>
+          <div><i class="fas fa-phone text-muted me-1"></i> Mobile: <?php echo sanitize($st['phone'] ?: 'N/A'); ?></div>
+        </div>
+        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+          <a href="<?php echo BASE_URL; ?>reports/student_report.php?roll=<?php echo urlencode($st['student_roll_no']); ?>" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center;">
+            <i class="fas fa-file-invoice me-1"></i> View Progress Card
+          </a>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+</div>
+
+<script>
+function filterStudentCards() {
+  const query = document.getElementById('gfmStudentSearch').value.toLowerCase().trim();
+  const items = document.querySelectorAll('.student-profile-item');
+  
+  items.forEach(item => {
+    const searchText = item.getAttribute('data-search') || '';
+    if (searchText.includes(query)) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

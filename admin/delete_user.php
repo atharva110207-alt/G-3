@@ -1,29 +1,30 @@
 <?php
-// Delete User Handler
+// Practical Assessment System - Delete User Action
+// Zeal College of Engineering & Research
 
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-require_role(['admin', 'hod']);
+require_role('admin');
 
-$id = intval($_GET['id'] ?? 0);
+$delete_id = intval($_GET['id'] ?? 0);
+$current_user = get_logged_user();
 
-if ($id) {
-    // Prevent self deletion
-    if ($id === $_SESSION['user_id']) {
-        set_flash('error', 'You cannot delete your own active account!');
+if ($delete_id > 0 && $delete_id != $current_user['id']) {
+    $sql = "DELETE FROM users WHERE id = ?";
+    $stmt = execute_prepared($conn, $sql, "i", [$delete_id]);
+    if ($stmt) {
+        mysqli_stmt_close($stmt);
+        log_audit($conn, $current_user['id'], $current_user['role'], 'Delete User', 'user_management', 'Deleted user ID #' . $delete_id);
+        set_flash('success', 'User account deleted successfully.');
     } else {
-        $del_sql = "DELETE FROM users WHERE id = ?";
-        $stmt = execute_prepared($conn, $del_sql, "i", [$id]);
-        if ($stmt) {
-            mysqli_stmt_close($stmt);
-            log_audit($conn, $_SESSION['user_id'], 'Deleted User Account', 'users', "Deleted user ID #$id");
-            set_flash('success', "User account #$id deleted successfully.");
-        } else {
-            set_flash('error', 'Failed to delete user.');
-        }
+        set_flash('error', 'Failed to delete user account.');
     }
+} else {
+    set_flash('error', 'Invalid operation or cannot delete your own active session account.');
 }
 
 header('Location: manage_user.php');

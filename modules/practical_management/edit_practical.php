@@ -1,62 +1,92 @@
 <?php
-// Edit Practical Experiment
+// Practical Assessment System - Edit Practical Controller
+// Zeal College of Engineering & Research
 
-$page_title = 'Edit Practical';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/auth.php';
-require_once __DIR__ . '/../../includes/functions.php';
+$page_title = "Edit Practical Experiment";
+require_once __DIR__ . '/../../includes/header.php';
 
 require_role(['faculty', 'admin', 'hod']);
 
-$id = intval($_GET['id'] ?? 0);
-if (!$id) {
-    header('Location: ../dashboard/faculty_dashboard.php');
+$edit_id = intval($_GET['id'] ?? 0);
+if ($edit_id <= 0) {
+    header('Location: ' . BASE_URL . 'modules/dashboard/faculty_dashboard.php');
+    exit();
+}
+
+$error = '';
+
+$sql = "SELECT * FROM practicals WHERE id = ?";
+$stmt = execute_prepared($conn, $sql, "i", [$edit_id]);
+$target_pract = null;
+if ($stmt) {
+    $res = mysqli_stmt_get_result($stmt);
+    $target_pract = mysqli_fetch_assoc($res);
+    mysqli_stmt_close($stmt);
+}
+
+if (!$target_pract) {
+    header('Location: ' . BASE_URL . 'modules/dashboard/faculty_dashboard.php');
     exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $subject_name = sanitize($_POST['subject_name'] ?? '');
+    $exp_no = intval($_POST['exp_no'] ?? 0);
     $title = sanitize($_POST['title'] ?? '');
-    $scheduled_date = sanitize($_POST['scheduled_date'] ?? date('Y-m-d'));
+    $scheduled_date = sanitize($_POST['scheduled_date'] ?? ''); // Plan Date
 
-    $sql = "UPDATE practicals SET title = ?, scheduled_date = ? WHERE id = ?";
-    $stmt = execute_prepared($conn, $sql, "ssi", [$title, $scheduled_date, $id]);
-    if ($stmt) {
-        mysqli_stmt_close($stmt);
-        log_audit($conn, $_SESSION['user_id'], 'Updated Practical', 'practicals', "Updated Exp #$id title to $title");
-        set_flash('success', 'Practical experiment updated.');
-        header('Location: ../dashboard/faculty_dashboard.php');
-        exit();
+    if (empty($subject_name) || $exp_no <= 0 || empty($title) || empty($scheduled_date)) {
+        $error = "Subject Name, Exp #, Title, and Plan Date are required.";
+    } else {
+        $up_sql = "UPDATE practicals SET subject_name = ?, exp_no = ?, title = ?, scheduled_date = ? WHERE id = ?";
+        $up_stmt = execute_prepared($conn, $up_sql, "sissi", [$subject_name, $exp_no, $title, $scheduled_date, $edit_id]);
+        if ($up_stmt) {
+            mysqli_stmt_close($up_stmt);
+            log_audit($conn, $user['id'], $user['role'], 'Edit Practical', 'practical_management', 'Updated practical ID #' . $edit_id);
+            set_flash('success', 'Practical experiment updated successfully!');
+            header('Location: ' . BASE_URL . 'modules/dashboard/faculty_dashboard.php');
+            exit();
+        }
     }
 }
-
-// Fetch practical
-$p_sql = "SELECT * FROM practicals WHERE id = ? LIMIT 1";
-$p_stmt = execute_prepared($conn, $p_sql, "i", [$id]);
-$pract = false;
-if ($p_stmt) {
-    $pract = mysqli_fetch_assoc(mysqli_stmt_get_result($p_stmt));
-    mysqli_stmt_close($p_stmt);
-}
-
-include __DIR__ . '/../../includes/header.php';
 ?>
 
-<div class="card" style="max-width: 600px; margin: 0 auto;">
-    <div class="card-header">
-        <h2 class="card-title">Edit Practical Experiment</h2>
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-edit text-primary me-2"></i> Edit Practical Experiment (#<?php echo $target_pract['id']; ?>)</h3>
+  </div>
+
+  <?php if (!empty($error)): ?>
+    <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i> <?php echo sanitize($error); ?></div>
+  <?php endif; ?>
+
+  <form method="POST" action="">
+    <div class="form-group">
+      <label for="subject_name" class="form-label">Subject Name</label>
+      <input type="text" id="subject_name" name="subject_name" class="form-control" value="<?php echo sanitize($target_pract['subject_name']); ?>" required>
     </div>
 
-    <form action="" method="POST">
-        <div class="form-group">
-            <label class="form-label">Title</label>
-            <input type="text" name="title" class="form-control" required value="<?php echo sanitize($pract['title'] ?? ''); ?>">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Scheduled Date</label>
-            <input type="date" name="scheduled_date" class="form-control" required value="<?php echo sanitize($pract['scheduled_date'] ?? ''); ?>">
-        </div>
-        <button type="submit" class="btn btn-primary">Update Experiment</button>
-    </form>
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+      <div class="form-group">
+        <label for="exp_no" class="form-label">Exp #</label>
+        <input type="number" id="exp_no" name="exp_no" class="form-control" value="<?php echo $target_pract['exp_no']; ?>" required>
+      </div>
+
+      <div class="form-group">
+        <label for="title" class="form-label">Experiment Title</label>
+        <input type="text" id="title" name="title" class="form-control" value="<?php echo sanitize($target_pract['title']); ?>" required>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="scheduled_date" class="form-label">Plan Date</label>
+      <input type="date" id="scheduled_date" name="scheduled_date" class="form-control" value="<?php echo $target_pract['scheduled_date']; ?>" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-save me-2"></i> Save Changes
+    </button>
+  </form>
 </div>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

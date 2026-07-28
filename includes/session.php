@@ -1,6 +1,6 @@
 <?php
-// Practical Assessment & Laboratory Performance Management System
-// Session Management & Flash Notification Helper
+// Practical Assessment System - Session Management & Flash Notifications
+// Zeal College of Engineering & Research
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -15,7 +15,7 @@ function is_logged_in() {
 }
 
 /**
- * Get currently logged-in user object/array
+ * Get currently logged-in user array
  * @return array|null
  */
 function get_logged_user() {
@@ -26,7 +26,9 @@ function get_logged_user() {
             'email' => $_SESSION['email'] ?? '',
             'role' => $_SESSION['role'] ?? '',
             'student_roll_no' => $_SESSION['student_roll_no'] ?? null,
-            'division' => $_SESSION['division'] ?? null
+            'zprn' => $_SESSION['zprn'] ?? null,
+            'class' => $_SESSION['class'] ?? 'TY',
+            'division' => $_SESSION['division'] ?? 'Division C'
         ];
     }
     return null;

@@ -1,118 +1,243 @@
 <?php
-// Practical Assessment & Laboratory Performance Management System
-// Dynamic Role-Based Sidebar Navigation
+// Practical Assessment System - Sidebar Navigation Component
+// Zeal College of Engineering & Research
 
-$user_role = get_user_role();
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/../config/config.php';
+
+$current_user = get_logged_user();
+$user_role = $current_user['role'] ?? 'guest';
+$current_page = basename($_SERVER['PHP_SELF']);
+
+/**
+ * Helper to check active page
+ */
+function is_active($page_names) {
+    global $current_page;
+    if (is_string($page_names)) {
+        $page_names = [$page_names];
+    }
+    return in_array($current_page, $page_names) ? 'active' : '';
+}
 ?>
-<aside class="sidebar" style="width: 260px; background-color: var(--bg-sidebar); min-height: 100vh; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s ease;">
-    <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 0.75rem;">
-        <div style="font-size: 1.75rem;">⚡</div>
-        <div>
-            <div style="color: #ffffff; font-weight: 800; font-size: 1.125rem; letter-spacing: -0.02em;">LAB ASSESS</div>
-            <div style="color: var(--sidebar-text); font-size: 0.75rem; font-weight: 600;">Performance Portal</div>
-        </div>
+
+<aside class="app-sidebar" id="appSidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">Z</div>
+    <div class="brand-text">
+      <span class="brand-title">ZEAL PAS</span>
+      <span class="brand-sub">ECE Department</span>
     </div>
+  </div>
 
-    <div style="padding: 1rem 0; flex: 1;" class="sidebar-menu">
-        <div style="padding: 0.5rem 1.5rem; font-size: 0.6875rem; font-weight: 700; color: var(--sidebar-text); text-transform: uppercase; letter-spacing: 0.08em;">
-            Main Navigation
-        </div>
+  <nav class="sidebar-menu">
+    <!-- SECTION: OVERVIEW -->
+    <div class="menu-section-label">OVERVIEW</div>
+    <a href="<?php echo get_role_dashboard($user_role); ?>" class="menu-item <?php echo is_active(['admin_dashboard.php', 'hod_dashboard.php', 'gfm_dashboarrd.php', 'faculty_dashboard.php', 'student_dashboard.php', 'parent_dashboard.php', 'index.php']); ?>">
+      <i class="fas fa-chart-line menu-icon"></i>
+      <span>Dashboard</span>
+    </a>
 
-        <?php if ($user_role === 'admin' || $user_role === 'hod'): ?>
-            <a href="<?php echo BASE_URL; ?>modules/dashboard/admin_dashboard.php" class="sidebar-link">
-                📊 Admin Dashboard
-            </a>
-            <a href="<?php echo BASE_URL; ?>admin/manage_user.php" class="sidebar-link">
-                👥 User Management
-            </a>
-            <a href="<?php echo BASE_URL; ?>modules/practical_management/create_practical.php" class="sidebar-link">
-                🧪 Schedule Practicals
-            </a>
-            <a href="<?php echo BASE_URL; ?>admin/audit_logs.php" class="sidebar-link">
-                📜 System Audit Logs
-            </a>
-            <a href="<?php echo BASE_URL; ?>admin/backup.php" class="sidebar-link">
-                💾 Database Backup
-            </a>
-            <a href="<?php echo BASE_URL; ?>reports/final_marksheet.php" class="sidebar-link">
-                📋 Final Marksheet Report
-            </a>
-        <?php endif; ?>
+    <!-- SECTION: ASSESSMENT -->
+    <div class="menu-section-label">ASSESSMENT</div>
+    
+    <?php if ($user_role === 'admin'): ?>
+      <a href="<?php echo BASE_URL; ?>admin/manage_user.php" class="menu-item <?php echo is_active(['manage_user.php', 'add_user.php', 'edit_user.php']); ?>">
+        <i class="fas fa-users-cog menu-icon"></i>
+        <span>User Management</span>
+      </a>
+      <a href="<?php echo BASE_URL; ?>admin/create_batches.php" class="menu-item <?php echo is_active(['create_batches.php']); ?>">
+        <i class="fas fa-layer-group menu-icon"></i>
+        <span>Manual Batches</span>
+      </a>
+      <a href="<?php echo BASE_URL; ?>admin/allocations.php" class="menu-item <?php echo is_active(['allocations.php']); ?>">
+        <i class="fas fa-tasks menu-icon"></i>
+        <span>Subject Allocation</span>
+      </a>
+    <?php endif; ?>
 
-        <?php if ($user_role === 'gfm'): ?>
-            <a href="<?php echo BASE_URL; ?>modules/dashboard/gfm_dashboarrd.php" class="sidebar-link">
-                📊 GFM Overview Dashboard
-            </a>
-            <a href="<?php echo BASE_URL; ?>modules/user_management/students.php" class="sidebar-link">
-                🎓 Division C Students
-            </a>
-            <a href="<?php echo BASE_URL; ?>reports/attendance_report.php" class="sidebar-link">
-                📅 Class Attendance Summary
-            </a>
-            <a href="<?php echo BASE_URL; ?>reports/final_marksheet.php" class="sidebar-link">
-                📑 Consolidated Term-Work
-            </a>
-        <?php endif; ?>
+    <?php if ($user_role === 'hod'): ?>
+      <a href="<?php echo BASE_URL; ?>admin/allocations.php" class="menu-item <?php echo is_active(['allocations.php']); ?>">
+        <i class="fas fa-tasks menu-icon"></i>
+        <span>Subject Allocation</span>
+      </a>
+      <a href="<?php echo BASE_URL; ?>reports/final_marksheet.php" class="menu-item <?php echo is_active(['final_marksheet.php', 'assesment_report.php']); ?>">
+        <i class="fas fa-clipboard-check menu-icon"></i>
+        <span>Department Reports</span>
+      </a>
+    <?php endif; ?>
 
-        <?php if ($user_role === 'faculty'): ?>
-            <a href="<?php echo BASE_URL; ?>modules/dashboard/faculty_dashboard.php" class="sidebar-link">
-                📊 Faculty Dashboard
-            </a>
-            <a href="<?php echo BASE_URL; ?>modules/practical_management/create_practical.php" class="sidebar-link">
-                ➕ Setup New Experiment
-            </a>
-            <a href="<?php echo BASE_URL; ?>modules/attendance/mark_attendance.php" class="sidebar-link">
-                ✍️ Mark Batch Attendance
-            </a>
-            <a href="<?php echo BASE_URL; ?>modules/assessment/practical_conduction.php" class="sidebar-link">
-                📝 25-Mark Assessment Grid
-            </a>
-            <a href="<?php echo BASE_URL; ?>modules/assessment/override_marks.php" class="sidebar-link">
-                🛠️ Override Marks Log
-            </a>
-            <a href="<?php echo BASE_URL; ?>reports/assesment_report.php" class="sidebar-link">
-                📑 Batch Marksheet Report
-            </a>
-        <?php endif; ?>
+    <?php if ($user_role === 'faculty'): ?>
+      <a href="<?php echo BASE_URL; ?>modules/practical_management/create_practical.php" class="menu-item <?php echo is_active(['create_practical.php', 'edit_practical.php']); ?>">
+        <i class="fas fa-flask menu-icon"></i>
+        <span>Create Practicals</span>
+      </a>
+      <a href="<?php echo BASE_URL; ?>modules/attendance/mark_attendance.php" class="menu-item <?php echo is_active(['mark_attendance.php']); ?>">
+        <i class="fas fa-calendar-check menu-icon"></i>
+        <span>Mark Attendance</span>
+      </a>
+      <a href="<?php echo BASE_URL; ?>modules/assessment/practical_conduction.php" class="menu-item <?php echo is_active(['practical_conduction.php']); ?>">
+        <i class="fas fa-pen-nib menu-icon"></i>
+        <span>Evaluate Students</span>
+      </a>
+    <?php endif; ?>
 
-        <?php if ($user_role === 'student'): ?>
-            <a href="<?php echo BASE_URL; ?>modules/dashboard/student_dashboard.php" class="sidebar-link">
-                🎓 My Performance Portal
-            </a>
-            <a href="<?php echo BASE_URL; ?>reports/student_report.php" class="sidebar-link">
-                📈 Practical Score History
-            </a>
-        <?php endif; ?>
+    <?php if ($user_role === 'gfm'): ?>
+      <a href="<?php echo BASE_URL; ?>reports/attendance_report.php" class="menu-item <?php echo is_active(['attendance_report.php']); ?>">
+        <i class="fas fa-user-check menu-icon"></i>
+        <span>Class Attendance</span>
+      </a>
+      <a href="<?php echo BASE_URL; ?>reports/assesment_report.php" class="menu-item <?php echo is_active(['assesment_report.php']); ?>">
+        <i class="fas fa-poll-h menu-icon"></i>
+        <span>Class Performance</span>
+      </a>
+    <?php endif; ?>
 
-        <?php if ($user_role === 'parent'): ?>
-            <a href="<?php echo BASE_URL; ?>modules/dashboard/parent_dashboard.php" class="sidebar-link">
-                👨‍👩‍👧 Child Performance Portal
-            </a>
-            <a href="<?php echo BASE_URL; ?>reports/student_report.php" class="sidebar-link">
-                📑 Detailed Term-Work Report
-            </a>
-        <?php endif; ?>
-    </div>
+    <?php if ($user_role === 'student' || $user_role === 'parent'): ?>
+      <a href="<?php echo BASE_URL; ?>reports/final_marksheet.php" class="menu-item <?php echo is_active(['final_marksheet.php']); ?>">
+        <i class="fas fa-award menu-icon"></i>
+        <span>My Termwork Marks</span>
+      </a>
+    <?php endif; ?>
 
-    <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; color: var(--sidebar-text);">
-        System v2.5 &bull; Production Ready
-    </div>
+    <!-- SECTION: RESOURCES -->
+    <div class="menu-section-label">RESOURCES</div>
+    <a href="<?php echo BASE_URL; ?>modules/practical_management/syllabus.php" class="menu-item <?php echo is_active(['syllabus.php']); ?>">
+      <i class="fas fa-book-open menu-icon"></i>
+      <span><?php echo ($user_role === 'admin' || $user_role === 'hod') ? 'Syllabus Upload' : 'View Syllabus'; ?></span>
+    </a>
+    <a href="<?php echo BASE_URL; ?>reports/final_marksheet.php" class="menu-item <?php echo is_active(['final_marksheet.php', 'export_excel.php', 'export_pdf.php']); ?>">
+      <i class="fas fa-file-alt menu-icon"></i>
+      <span>Reports & Analytics</span>
+    </a>
+
+    <!-- SECTION: ACCOUNT -->
+    <div class="menu-section-label">ACCOUNT</div>
+    <a href="<?php echo BASE_URL; ?>modules/authentication/reset_password.php" class="menu-item <?php echo is_active(['reset_password.php']); ?>">
+      <i class="fas fa-key menu-icon"></i>
+      <span>Reset Password</span>
+    </a>
+    
+    <?php if ($user_role === 'admin' || $user_role === 'hod'): ?>
+      <a href="<?php echo BASE_URL; ?>admin/audit_logs.php" class="menu-item <?php echo is_active(['audit_logs.php']); ?>">
+        <i class="fas fa-shield-alt menu-icon"></i>
+        <span>System Audit Logs</span>
+      </a>
+    <?php endif; ?>
+
+    <?php if ($user_role === 'admin'): ?>
+      <a href="<?php echo BASE_URL; ?>admin/backup.php" class="menu-item <?php echo is_active(['backup.php']); ?>">
+        <i class="fas fa-database menu-icon"></i>
+        <span>Database Backup</span>
+      </a>
+    <?php endif; ?>
+
+    <a href="<?php echo BASE_URL; ?>modules/authentication/logout.php" class="menu-item text-danger">
+      <i class="fas fa-sign-out-alt menu-icon"></i>
+      <span>Logout</span>
+    </a>
+  </nav>
 </aside>
 
 <style>
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1.5rem;
-    color: var(--sidebar-text);
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.2s ease;
+.app-sidebar {
+  width: 260px;
+  background-color: var(--bg-sidebar);
+  color: var(--sidebar-text);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(99, 102, 241, 0.2);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
 }
-.sidebar-link:hover {
-    background-color: var(--sidebar-hover);
-    color: var(--sidebar-text-active);
+
+.sidebar-brand {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #6366F1, #38bdf8);
+  color: #ffffff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.25rem;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+}
+
+.brand-title {
+  display: block;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #1e1b4b;
+  letter-spacing: 0.05em;
+}
+
+.brand-sub {
+  display: block;
+  font-size: 0.725rem;
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.sidebar-menu {
+  padding: 1.25rem 0.75rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.menu-section-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #4338ca;
+  letter-spacing: 0.08em;
+  padding: 1rem 0.75rem 0.5rem 0.75rem;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 1rem;
+  color: var(--sidebar-text);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 10px;
+  margin-bottom: 0.25rem;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.menu-item:hover {
+  background-color: var(--sidebar-hover);
+  color: #1e1b4b;
+}
+
+.menu-item.active {
+  background-color: var(--sidebar-active-bg) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.menu-icon {
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+}
+
+.text-danger {
+  color: #dc2626 !important;
+}
+
+.text-danger:hover {
+  background-color: #fee2e2 !important;
 }
 </style>

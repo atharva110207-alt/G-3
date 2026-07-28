@@ -1,130 +1,144 @@
 <?php
-// Parent Read-Only Performance Portal
+// Practical Assessment System - Parent Portal
+// Zeal College of Engineering & Research
 
-$page_title = 'Parent Portal';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/auth.php';
-require_once __DIR__ . '/../../includes/functions.php';
+$page_title = "Parent Dashboard";
+require_once __DIR__ . '/../../includes/header.php';
 
-require_role(['parent', 'admin']);
+require_role(['parent', 'admin', 'hod']);
 
-$roll_no = $_SESSION['student_roll_no'] ?? '';
+$student_roll = $user['student_roll_no'] ?? '';
+$student_info = null;
+$my_evaluations = [];
+$att_percentage = 100;
 
-// Fetch child student user
-$student_sql = "SELECT id, full_name, email, division, phone FROM users WHERE student_roll_no = ? AND role = 'student' LIMIT 1";
-$student_stmt = execute_prepared($conn, $student_sql, "s", [$roll_no]);
-$student = false;
-if ($student_stmt) {
-    $res = mysqli_stmt_get_result($student_stmt);
-    $student = mysqli_fetch_assoc($res);
-    mysqli_stmt_close($student_stmt);
+if (!empty($student_roll)) {
+    // Fetch Linked Student Record
+    $st_sql = "SELECT id, full_name, email, student_roll_no, zprn, class, division FROM users WHERE student_roll_no = ? AND role = 'student'";
+    $st_stmt = execute_prepared($conn, $st_sql, "s", [$student_roll]);
+    if ($st_stmt) {
+        $res = mysqli_stmt_get_result($st_stmt);
+        $student_info = mysqli_fetch_assoc($res);
+        mysqli_stmt_close($st_stmt);
+    }
+
+    if ($student_info) {
+        $student_id = $student_info['id'];
+        
+        // Fetch Evaluations
+        $eval_sql = "SELECT a.*, p.title as exp_title, p.exp_no, p.subject_name 
+                    FROM assessment a 
+                    JOIN practicals p ON a.practical_id = p.id 
+                    WHERE a.student_id = ? 
+                    ORDER BY p.exp_no ASC";
+        $eval_stmt = execute_prepared($conn, $eval_sql, "i", [$student_id]);
+        if ($eval_stmt) {
+            $res = mysqli_stmt_get_result($eval_stmt);
+            while ($row = mysqli_fetch_assoc($res)) {
+                $my_evaluations[] = $row;
+            }
+            mysqli_stmt_close($eval_stmt);
+        }
+
+        // Attendance Percentage
+        $att_sql = "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present FROM attendance WHERE student_id = ?";
+        $att_stmt = execute_prepared($conn, $att_sql, "i", [$student_id]);
+        if ($att_stmt) {
+            $res = mysqli_stmt_get_result($att_stmt);
+            if ($r = mysqli_fetch_assoc($res)) {
+                $att_percentage = $r['total'] > 0 ? round(($r['present'] / $r['total']) * 100, 1) : 100;
+            }
+            mysqli_stmt_close($att_stmt);
+        }
+    }
 }
-
-$attendance_pct = 0;
-$present_count = 0;
-$total_practicals = 0;
-$score_res = false;
-
-if ($student) {
-    // Attendance stats
-    $att_sql = "SELECT 
-                COUNT(*) as total_practicals,
-                SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present_count
-                FROM attendance WHERE student_id = ?";
-    $att_stmt = execute_prepared($conn, $att_sql, "i", [$student['id']]);
-    $att_data = mysqli_fetch_assoc(mysqli_stmt_get_result($att_stmt));
-    $total_practicals = intval($att_data['total_practicals'] ?? 0);
-    $present_count = intval($att_data['present_count'] ?? 0);
-    $attendance_pct = $total_practicals > 0 ? round(($present_count / $total_practicals) * 100, 1) : 100;
-
-    // Evaluations
-    $score_sql = "SELECT ass.*, p.exp_no, p.title, p.subject_name
-                  FROM assessment ass
-                  JOIN practicals p ON ass.practical_id = p.id
-                  WHERE ass.student_id = ?
-                  ORDER BY p.exp_no ASC";
-    $score_stmt = execute_prepared($conn, $score_sql, "i", [$student['id']]);
-    $score_res = mysqli_stmt_get_result($score_stmt);
-}
-
-include __DIR__ . '/../../includes/header.php';
 ?>
 
-<div class="card">
-    <div class="card-header">
-        <div>
-            <h2 class="card-title">Parent Monitoring Portal</h2>
-            <p style="font-size: 0.875rem; color: var(--text-muted);">
-                Child: <strong><?php echo sanitize($student['full_name'] ?? 'Student'); ?></strong> (Roll: <?php echo sanitize($roll_no); ?>)
-            </p>
-        </div>
-        <span class="badge badge-info">Read-Only Parent Mode</span>
+<div class="card mb-4">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title"><i class="fas fa-user-friends text-primary me-2"></i> Parent Performance Monitoring Portal</h3>
+      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
+        Monitoring Wards Academic Conduction, Attendance, and Multi-Tier Practical Rubric Marks
+      </p>
     </div>
-
-    <!-- Attendance Alert Banner -->
-    <?php if ($attendance_pct < 75): ?>
-        <div class="alert alert-danger">
-            ⚠️ <strong>Attendance Warning Alert:</strong> Your child's current lab attendance is <strong><?php echo $attendance_pct; ?>%</strong> (Below the 75% mandatory requirement).
-        </div>
-    <?php else: ?>
-        <div class="alert alert-success">
-            ✅ <strong>Good Attendance Standing:</strong> Current lab attendance is <strong><?php echo $attendance_pct; ?>%</strong>.
-        </div>
-    <?php endif; ?>
-
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">📈</div>
-            <div class="stat-content">
-                <div class="stat-value"><?php echo $attendance_pct; ?>%</div>
-                <div class="stat-label">Lab Attendance Status</div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">🧪</div>
-            <div class="stat-content">
-                <div class="stat-value"><?php echo $present_count; ?> / <?php echo $total_practicals; ?></div>
-                <div class="stat-label">Sessions Attended</div>
-            </div>
-        </div>
-    </div>
-
-    <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem;">Experiment Performance & Scores</h3>
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Exp #</th>
-                    <th>Subject</th>
-                    <th>Experiment Title</th>
-                    <th>Total Score (0-25)</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($score_res && mysqli_num_rows($score_res) > 0): ?>
-                    <?php while ($s = mysqli_fetch_assoc($score_res)): ?>
-                        <tr>
-                            <td>Exp <?php echo $s['exp_no']; ?></td>
-                            <td><?php echo sanitize($s['subject_name']); ?></td>
-                            <td><?php echo sanitize($s['title']); ?></td>
-                            <td><strong><?php echo $s['total_score']; ?> / 25</strong></td>
-                            <td>
-                                <span class="badge badge-<?php echo $s['total_score'] >= 15 ? 'success' : 'danger'; ?>">
-                                    <?php echo $s['total_score'] >= 15 ? 'Passed / Satisfactory' : 'Needs Improvement'; ?>
-                                </span>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-muted);">No experiment marks evaluated yet.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+    <span class="badge badge-info" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+      Linked Roll No: <?php echo sanitize($student_roll ?: 'N/A'); ?>
+    </span>
+  </div>
 </div>
+
+<?php if ($student_info): ?>
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+      <div class="stat-info">
+        <h3><?php echo sanitize($student_info['full_name']); ?></h3>
+        <p>Ward Name &bull; <?php echo sanitize($student_info['class'] . ' ' . $student_info['division']); ?></p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;"><i class="fas fa-calendar-check"></i></div>
+      <div class="stat-info">
+        <h3><?php echo $att_percentage; ?>%</h3>
+        <p>Overall Practical Attendance</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;"><i class="fas fa-barcode"></i></div>
+      <div class="stat-info">
+        <h3><?php echo sanitize($student_info['zprn'] ?: 'ZPRN-PENDING'); ?></h3>
+        <p>Zeal PRN Number</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title"><i class="fas fa-list-ol text-primary me-2"></i> Practical Experiment Performance Breakdown</h3>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Exp #</th>
+            <th>Subject</th>
+            <th>Experiment Title</th>
+            <th>Regularity (5)</th>
+            <th>Conduction (10)</th>
+            <th>Output (5)</th>
+            <th>Viva (5)</th>
+            <th>Total Marks (25)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (empty($my_evaluations)): ?>
+            <tr><td colspan="8" class="text-center" style="color: var(--text-muted); padding: 2rem;">No evaluated practical records for your ward yet.</td></tr>
+          <?php else: ?>
+            <?php foreach ($my_evaluations as $ev): ?>
+              <tr>
+                <td><span class="badge badge-info">Exp #<?php echo $ev['exp_no']; ?></span></td>
+                <td><strong><?php echo sanitize($ev['subject_name']); ?></strong></td>
+                <td><?php echo sanitize($ev['exp_title']); ?></td>
+                <td><?php echo $ev['regularity_score']; ?> / 5</td>
+                <td><?php echo $ev['conduction_score']; ?> / 10</td>
+                <td><?php echo $ev['output_score']; ?> / 5</td>
+                <td><?php echo $ev['viva_score']; ?> / 5</td>
+                <td><strong style="color: #38bdf8; font-size: 1.05rem;"><?php echo $ev['total_score']; ?> / 25</strong></td>
+              </tr>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<?php else: ?>
+  <div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i> No active student account is currently linked to roll number <strong><?php echo sanitize($student_roll); ?></strong>. Please contact Administrator.
+  </div>
+<?php endif; ?>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
