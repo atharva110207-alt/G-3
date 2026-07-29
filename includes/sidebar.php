@@ -33,7 +33,7 @@ function is_active($page_names) {
   <nav class="sidebar-menu">
     <!-- SECTION: OVERVIEW -->
     <div class="menu-section-label">OVERVIEW</div>
-    <a href="<?php echo get_role_dashboard($user_role); ?>" class="menu-item <?php echo is_active(['admin_dashboard.php', 'hod_dashboard.php', 'gfm_dashboarrd.php', 'faculty_dashboard.php', 'student_dashboard.php', 'parent_dashboard.php', 'index.php']); ?>">
+    <a href="<?php echo get_role_dashboard($user_role); ?>" class="menu-item <?php echo is_active(['admin_dashboard.php', 'hod_dashboard.php', 'gfm_dashboard.php', 'faculty_dashboard.php', 'student_dashboard.php', 'parent_dashboard.php', 'index.php']); ?>">
       <i class="fas fa-chart-line menu-icon"></i>
       <span>Dashboard</span>
     </a>

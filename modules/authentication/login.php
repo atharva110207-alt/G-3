@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $user = null;
         
-        // 1. Try matching with explicit role filter if role card selected
+        // 1. Try matching with explicit role filter if a role card was selected
         if (!empty($role)) {
             $sql = "SELECT id, full_name, email, password, role, student_roll_no, zprn, class, division FROM users 
-                    WHERE (email = ? OR student_roll_no = ? OR zprn = ? OR full_name = ?) AND role = ?";
+                    WHERE (email = ? OR student_roll_no = ? OR zprn = ? OR full_name = ?) AND LOWER(role) = LOWER(?) LIMIT 1";
             $stmt = execute_prepared($conn, $sql, "sssss", [$identity, $identity, $identity, $identity, $role]);
             if ($stmt) {
                 $res = mysqli_stmt_get_result($stmt);
@@ -39,10 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // 2. Fallback to matching identity regardless of role filter
+        // 2. Fallback: match identity regardless of role selection if no record was found above
         if (!$user) {
             $sql = "SELECT id, full_name, email, password, role, student_roll_no, zprn, class, division FROM users 
-                    WHERE (email = ? OR student_roll_no = ? OR zprn = ? OR full_name = ?)";
+                    WHERE (email = ? OR student_roll_no = ? OR zprn = ? OR full_name = ?) LIMIT 1";
             $stmt = execute_prepared($conn, $sql, "ssss", [$identity, $identity, $identity, $identity]);
             if ($stmt) {
                 $res = mysqli_stmt_get_result($stmt);
@@ -52,8 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ($user) {
-            // Verify PLAIN TEXT password per requirements specification
-            if ($password === $user['password']) {
+            // Check plain-text password first, fallback to password_verify if hashed
+            if ($password === $user['password'] || password_verify($password, $user['password'])) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['email'] = $user['email'];
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['academic_year'] = DEFAULT_ACADEMIC_YEAR;
                 $_SESSION['class_filter'] = $user['class'] ?? 'TY';
 
-                log_audit($conn, $user['id'], $user['role'], 'User Login', 'authentication', 'Logged in via username/email/roll credentials.');
+                log_audit($conn, $user['id'], $user['role'], 'User Login', 'authentication', 'Logged in via credentials.');
                 
                 set_flash('success', 'Welcome back, ' . $user['full_name'] . '!');
                 header('Location: ' . get_role_dashboard($user['role']));

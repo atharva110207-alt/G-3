@@ -49,7 +49,7 @@ function get_role_dashboard($role) {
         case 'hod':
             return BASE_URL . 'modules/dashboard/hod_dashboard.php';
         case 'gfm':
-            return BASE_URL . 'modules/dashboard/gfm_dashboarrd.php';
+            return BASE_URL . 'modules/dashboard/gfm_dashboard.php';
         case 'faculty':
             return BASE_URL . 'modules/dashboard/faculty_dashboard.php';
         case 'student':

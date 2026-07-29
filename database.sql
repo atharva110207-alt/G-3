@@ -192,41 +192,79 @@ INSERT INTO `users` (`id`, `full_name`, `email`, `password`, `role`, `student_ro
 INSERT INTO `users` (`id`, `full_name`, `email`, `password`, `role`, `student_roll_no`, `zprn`, `class`, `division`, `phone`) VALUES
 (5, 'Prof. P. V. Kulkarni', 'gfm.divc@zcoer.edu.in', 'gfm123', 'gfm', NULL, NULL, 'TY', 'Division C', '9876543214');
 
--- 6. 20 Division C Students (Roll Nos: EC1301 to EC1320, passwords: student123)
-INSERT INTO `users` (`id`, `full_name`, `email`, `password`, `role`, `student_roll_no`, `zprn`, `class`, `division`, `phone`) VALUES
-(101, 'Aarav Sharma', 'ec1301@zcoer.edu.in', 'student123', 'student', 'EC1301', 'ZPRN20261301', 'TY', 'Division C', '9900001301'),
-(102, 'Ananya Verma', 'ec1302@zcoer.edu.in', 'student123', 'student', 'EC1302', 'ZPRN20261302', 'TY', 'Division C', '9900001302'),
-(103, 'Aditya Joshi', 'ec1303@zcoer.edu.in', 'student123', 'student', 'EC1303', 'ZPRN20261303', 'TY', 'Division C', '9900001303'),
-(104, 'Diya Patel', 'ec1304@zcoer.edu.in', 'student123', 'student', 'EC1304', 'ZPRN20261304', 'TY', 'Division C', '9900001304'),
-(105, 'Ishan Mehta', 'ec1305@zcoer.edu.in', 'student123', 'student', 'EC1305', 'ZPRN20261305', 'TY', 'Division C', '9900001305'),
-(106, 'Kavya Nair', 'ec1306@zcoer.edu.in', 'student123', 'student', 'EC1306', 'ZPRN20261306', 'TY', 'Division C', '9900001306'),
-(107, 'Krishna Iyer', 'ec1307@zcoer.edu.in', 'student123', 'student', 'EC1307', 'ZPRN20261307', 'TY', 'Division C', '9900001307'),
-(108, 'Neha Kulkarni', 'ec1308@zcoer.edu.in', 'student123', 'student', 'EC1308', 'ZPRN20261308', 'TY', 'Division C', '9900001308'),
-(109, 'Pranav Shinde', 'ec1309@zcoer.edu.in', 'student123', 'student', 'EC1309', 'ZPRN20261309', 'TY', 'Division C', '9900001309'),
-(110, 'Riya Deshmukh', 'ec1310@zcoer.edu.in', 'student123', 'student', 'EC1310', 'ZPRN20261310', 'TY', 'Division C', '9900001310'),
-(111, 'Rohan More', 'ec1311@zcoer.edu.in', 'student123', 'student', 'EC1311', 'ZPRN20261311', 'TY', 'Division C', '9900001311'),
-(112, 'Saanvi Pawar', 'ec1312@zcoer.edu.in', 'student123', 'student', 'EC1312', 'ZPRN20261312', 'TY', 'Division C', '9900001312'),
-(113, 'Samarth Jadhav', 'ec1313@zcoer.edu.in', 'student123', 'student', 'EC1313', 'ZPRN20261313', 'TY', 'Division C', '9900001313'),
-(114, 'Shreya Wagh', 'ec1314@zcoer.edu.in', 'student123', 'student', 'EC1314', 'ZPRN20261314', 'TY', 'Division C', '9900001314'),
-(115, 'Siddharth Thorat', 'ec1315@zcoer.edu.in', 'student123', 'student', 'EC1315', 'ZPRN20261315', 'TY', 'Division C', '9900001315'),
-(116, 'Tanvi Bhosale', 'ec1316@zcoer.edu.in', 'student123', 'student', 'EC1316', 'ZPRN20261316', 'TY', 'Division C', '9900001316'),
-(117, 'Utkarsh Gaikwad', 'ec1317@zcoer.edu.in', 'student123', 'student', 'EC1317', 'ZPRN20261317', 'TY', 'Division C', '9900001317'),
-(118, 'Vaishnavi Kale', 'ec1318@zcoer.edu.in', 'student123', 'student', 'EC1318', 'ZPRN20261318', 'TY', 'Division C', '9900001318'),
-(119, 'Yash Mane', 'ec1319@zcoer.edu.in', 'student123', 'student', 'EC1319', 'ZPRN20261319', 'TY', 'Division C', '9900001319'),
-(120, 'Zoya Shaikh', 'ec1320@zcoer.edu.in', 'student123', 'student', 'EC1320', 'ZPRN20261320', 'TY', 'Division C', '9900001320');
+-- 6. FY Division C Students (56 Enrolled Students - Academic Year 2025-26)
+DELETE FROM users WHERE division = 'Division C' AND role = 'student';
+
+INSERT INTO `users` (`full_name`, `email`, `password`, `role`, `student_roll_no`, `zprn`, `class`, `division`, `phone`) VALUES
+('AMBHORE PRAFUL RAJU', 'prafulambhore2580@gmail.com', 'student123', 'student', '1301', '125UEC1160', 'FY', 'Division C', '9371215742'),
+('AMBURE KRISHNA GANESHRAO', 'krishambure07@gmail.com', 'student123', 'student', '1302', '125UEC1102', 'FY', 'Division C', '7843001885'),
+('ATHARVA KISHOR CHINCHOLE', 'atharva110207@gmail.com', 'student123', 'student', '1303', '125UEC1042', 'FY', 'Division C', '8983677359'),
+('BEDRE TUKARAM PRADIP', 'tukarambedre3@gmail.com', 'student123', 'student', '1304', '125UEC1108', 'FY', 'Division C', '8390710440'),
+('BHAGAT SNEHAL PRAWESH', 'prajwalbhagat890@gmail.com', 'student123', 'student', '1305', '125UEC1147', 'FY', 'Division C', '7822944688'),
+('CHAVHAN YASH AMARSING', 'ychavhan858@gmail.com', 'student123', 'student', '1306', '125UEC1105', 'FY', 'Division C', '9579961660'),
+('CHEVALE OMKAR RAJKUMAR', 'omkarchewale@gmail.com', 'student123', 'student', '1307', '125UEC1063', 'FY', 'Division C', '8605783905'),
+('CHOPADE PAVAN DNYANESHWAR', 'pawanchopade35@gmail.com', 'student123', 'student', '1308', '125UEC1072', 'FY', 'Division C', '9860181354'),
+('DESHMUKH VEDANTI KISHOR', 'vedantideshmukh86@gmail.com', 'student123', 'student', '1309', '125UEC1038', 'FY', 'Division C', '9370885767'),
+('GEETHA SANGVE', 'geethasangve@gmail.com', 'student123', 'student', '1310', '125UEC1166', 'FY', 'Division C', '8374015602'),
+('GULHANE KRUSHNA PRASHANT', 'krushnagulhane2007@gmail.com', 'student123', 'student', '1311', '125UEC1034', 'FY', 'Division C', '8806413377'),
+('INGOLE GOVIND RAJARAM', 'govindingole34547@gmail.com', 'student123', 'student', '1312', '125UEC1015', 'FY', 'Division C', '9588499961'),
+('ISHWAR SHATRUGHNA UNHALE', 'ishwarunhale38@gmail.com', 'student123', 'student', '1313', '125UEC1027', 'FY', 'Division C', '9511217554'),
+('JADHAV MAULI VYANKATRAO', 'shubhangijadhav66035@gmail.com', 'student123', 'student', '1314', '125UEC1131', 'FY', 'Division C', '8626090683'),
+('KACHARE SEJAL SANTOSH', 'sejalkachare2007@gmail.com', 'student123', 'student', '1315', '125UEC1179', 'FY', 'Division C', '8767443283'),
+('KACHE VEDANT RAJU', 'vedantkache@gmail.com', 'student123', 'student', '1316', '125UEC1086', 'FY', 'Division C', '8999952105'),
+('KALSAI PRAJKTA ANIL', 'kalsaiprajkta@gmail.com', 'student123', 'student', '1317', '125UEC1040', 'FY', 'Division C', '8055574322'),
+('KARANDE SAHIL SANJAY', 'sahilkarande1011@gmail.com', 'student123', 'student', '1318', '125UEC1090', 'FY', 'Division C', '8806890629'),
+('KARIKANTE SANDESH CHANDRAKANT', 'sandeshkarikante838@gmail.com', 'student123', 'student', '1319', '125UEC1123', 'FY', 'Division C', '8263877670'),
+('KARTIK RATNAKAR SHINDE', 'shindekartik269@gmail.com', 'student123', 'student', '1320', '125UEC1149', 'FY', 'Division C', '9922066212'),
+('KASTE RUTUJA NAMDEV', 'namdevkaste123@gmail.com', 'student123', 'student', '1321', '125UEC1073', 'FY', 'Division C', '9922438704'),
+('KHAMKAR DIPTI DATTA', 'khamkardipti6@gmail.com', 'student123', 'student', '1322', '125UEC1004', 'FY', 'Division C', '9420930725'),
+('KHANDAGALE SHRAVANI SHARAD', 'shravanikhandagale2007@gmail.com', 'student123', 'student', '1323', '125UEC1161', 'FY', 'Division C', '7058979032'),
+('KHUSHI RAJESH KET', 'khushiket18@gmail.com', 'student123', 'student', '1326', '125UEC1076', 'FY', 'Division C', '8080191278'),
+('KOKARE SAKSHI DIPAK', 'dkokare241@gmail.com', 'student123', 'student', '1327', '125UEC1051', 'FY', 'Division C', '9730999239'),
+('KOKATE VIJAY DADASAHEB', 'vijaykokate7776@gmail.com', 'student123', 'student', '1328', '125UEC1155', 'FY', 'Division C', '7776856263'),
+('MANE BHAKTI BALWANT', 'manebhakti50@gmail.com', 'student123', 'student', '1329', '125UEC1024', 'FY', 'Division C', '9370476500'),
+('MANMATH SHARAD PARANKAR', 'manmathparankar@gmail.com', 'student123', 'student', '1330', '125UEC1188', 'FY', 'Division C', '9860509449'),
+('MATAL MAYURI RAVINDRA', 'mayurimatal1307@gmail.com', 'student123', 'student', '1331', '125UEC1171', 'FY', 'Division C', '7276962851'),
+('MATE PALLAV PRASHANT', 'pallavmate@gmail.com', 'student123', 'student', '1332', '125UEC1100', 'FY', 'Division C', '8888835378'),
+('MATHWALE PRATHMESH SHIVKUMAR', 'prathmeshmathwale@gmail.com', 'student123', 'student', '1333', '125UEC1046', 'FY', 'Division C', '9730910989'),
+('MITKARI OM VASANT', 'mitkariom426@gmail.com', 'student123', 'student', '1334', '125UEC1128', 'FY', 'Division C', '7559177972'),
+('NALAWADE ADITYA JALINDAR', 'nalawadeaditya206@gmail.com', 'student123', 'student', '1335', '125UEC1003', 'FY', 'Division C', '8468825215'),
+('ONKAR VITTHAL DORKE', 'sarthakdorke@gmail.com', 'student123', 'student', '1336', '125UEC1075', 'FY', 'Division C', '7972540544'),
+('PALHADE SHREYA SANTOSH', 'santoshpalhade19@gmail.com', 'student123', 'student', '1337', '125UEC1020', 'FY', 'Division C', '9325273198'),
+('PANGHATE PANKAJ SANTOSH', 'pankajpanghate49@gmail.com', 'student123', 'student', '1338', '125UEC1061', 'FY', 'Division C', '9021040245'),
+('PATARE ANUSHREE RAMESH', 'anushreepatare18@gmail.com', 'student123', 'student', '1339', '125UEC1099', 'FY', 'Division C', '9561822802'),
+('PAWAR SARVESH SHANTARAM', 'sarveshpawar818@gmail.com', 'student123', 'student', '1340', '125UEC1142', 'FY', 'Division C', '8446290672'),
+('PAWAR YOGESH ANKUSH', 'py8149972705@gmail.com', 'student123', 'student', '1341', '125UEC1036', 'FY', 'Division C', '8149972705'),
+('PRAJAPATI RAVITA DIPAK PRASAD', 'info.dipak90@gmail.com', 'student123', 'student', '1342', '125UEC1006', 'FY', 'Division C', '7058349565'),
+('PRATIKSHA BHAGWAN DOIPHODE', 'pratikshadoiphode010@gmail.com', 'student123', 'student', '1343', '125UEC1023', 'FY', 'Division C', '7498130477'),
+('RENUSE SWARALI PRAKASH', 'mrunalrenuse25@gmail.com', 'student123', 'student', '1344', '125UEC1148', 'FY', 'Division C', '9923609272'),
+('ROKADE MAYUR MANOJ', 'mayurrokade407@gmail.com', 'student123', 'student', '1345', '125UEC1030', 'FY', 'Division C', '9405212259'),
+('SARVALE AJINKYA MARUTI', 'ajinkyasarvale6@gmail.com', 'student123', 'student', '1346', '125UEC1146', 'FY', 'Division C', '7030658009'),
+('SARVARI VINAYAK MHETRE', 'vinayak9404@gmail.com', 'student123', 'student', '1347', '125UEC1116', 'FY', 'Division C', '8446802394'),
+('SAWALE OMKAR MARUTI', 'savaleomkar7@gmail.com', 'student123', 'student', '1348', '125UEC1033', 'FY', 'Division C', '9209258881'),
+('SHELKE PARNIKA ARVIND', 'parnikashelke@gmail.com', 'student123', 'student', '1349', '125UEC1167', 'FY', 'Division C', '8591240458'),
+('SHINDE SANIKA PARASHARAM', 'parsharamshinde60@gmail.com', 'student123', 'student', '1350', '125UEC1022', 'FY', 'Division C', '8530687141'),
+('SNEHA JHA', 'snehajha004@gmail.com', 'student123', 'student', '1351', '125UEC1170', 'FY', 'Division C', '7979838157'),
+('SONAWNE RAJWARDHAN GOVARDHAN', 'aonawanemanisha@gmail.com', 'student123', 'student', '1352', '125UEC1101', 'FY', 'Division C', '9021115743'),
+('SONTAKKE SANKET DHANRAJ', 'sanketsontakke2317@gmail.com', 'student123', 'student', '1353', '125UEC1066', 'FY', 'Division C', '9763271053'),
+('SURYAWANSHI ANUSHKA SURESH', 'vimalsuryawanshi2480@gmail.com', 'student123', 'student', '1354', '125UEC1118', 'FY', 'Division C', '9850901255'),
+('THORAT GAURI SATISH', 'gaurithorat7512@gmail.com', 'student123', 'student', '1355', '125UEC1174', 'FY', 'Division C', '7387937512'),
+('WADKAR SIDDHI BALASAHEB', 'bswadkar@gmail.com', 'student123', 'student', '1356', '125UEC1130', 'FY', 'Division C', '9881371509'),
+('WASU HARSHAD NARAYAN', 'wasuharshad@gmail.com', 'student123', 'student', '1357', '125UEC1083', 'FY', 'Division C', '9021510646'),
+('WAVHALE HARSHDEEP DHARMARAJ', 'harshwavhale293@gmail.com', 'student123', 'student', '1358', '125UEC1062', 'FY', 'Division C', '9822424834');
 
 -- 7. Parent Accounts (Linked to students via student_roll_no)
 INSERT INTO `users` (`id`, `full_name`, `email`, `password`, `role`, `student_roll_no`, `zprn`, `class`, `division`, `phone`) VALUES
-(201, 'Rajesh Sharma (Parent)', 'parent.ec1301@zcoer.edu.in', 'parent123', 'parent', 'EC1301', 'ZPRN20261301', 'TY', 'Division C', '9811111301'),
-(202, 'Sanjay Verma (Parent)', 'parent.ec1302@zcoer.edu.in', 'parent123', 'parent', 'EC1302', 'ZPRN20261302', 'TY', 'Division C', '9811111302'),
-(203, 'Mahesh Joshi (Parent)', 'parent.ec1303@zcoer.edu.in', 'parent123', 'parent', 'EC1303', 'ZPRN20261303', 'TY', 'Division C', '9811111303'),
-(204, 'Vikram Patel (Parent)', 'parent.ec1304@zcoer.edu.in', 'parent123', 'parent', 'EC1304', 'ZPRN20261304', 'TY', 'Division C', '9811111304'),
-(205, 'Sunil Mehta (Parent)', 'parent.ec1305@zcoer.edu.in', 'parent123', 'parent', 'EC1305', 'ZPRN20261305', 'TY', 'Division C', '9811111305');
+(201, 'Rajesh Sharma (Parent)', 'parent.1301@zcoer.edu.in', 'parent123', 'parent', '1301', '125UEC1160', 'FY', 'Division C', '9811111301'),
+(202, 'Sanjay Verma (Parent)', 'parent.1302@zcoer.edu.in', 'parent123', 'parent', '1302', '125UEC1102', 'FY', 'Division C', '9811111302'),
+(203, 'Kishor Chinchole (Parent)', 'parent.1303@zcoer.edu.in', 'parent123', 'parent', '1303', '125UEC1042', 'FY', 'Division C', '9811111303'),
+(204, 'Pradip Bedre (Parent)', 'parent.1304@zcoer.edu.in', 'parent123', 'parent', '1304', '125UEC1108', 'FY', 'Division C', '9811111304'),
+(205, 'Prawesh Bhagat (Parent)', 'parent.1305@zcoer.edu.in', 'parent123', 'parent', '1305', '125UEC1147', 'FY', 'Division C', '9811111305');
 
 -- 8. Batches (Division C split into C1 & C2)
 INSERT INTO `batches` (`id`, `batch_name`, `start_roll`, `end_roll`, `class`, `division`, `subject_assigned`, `academic_year`) VALUES
-(1, 'C1', 'EC1301', 'EC1310', 'TY', 'Division C', 'Microprocessors & Microcontrollers', '2026-2027'),
-(2, 'C2', 'EC1311', 'EC1320', 'TY', 'Division C', 'Digital Signal Processing', '2026-2027');
+(1, 'C1', '1301', '1328', 'FY', 'Division C', 'Microprocessors & Microcontrollers', '2025-2026'),
+(2, 'C2', '1329', '1358', 'FY', 'Division C', 'Digital Signal Processing', '2025-2026');
 
 -- 9. Subject Faculty Allocations
 INSERT INTO `faculty_allocations` (`id`, `faculty_id`, `subject_name`, `class`, `division`, `batch_id`, `academic_year`) VALUES
