@@ -93,13 +93,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/login.css">
 </head>
 <body class="login-page">
-  <div class="login-modal">
-    <div class="login-header">
-      <div class="zeal-logo">Z</div>
-      <div class="institution-title"><?php echo COLLEGE_NAME; ?></div>
-      <div class="department-title"><?php echo DEPARTMENT_NAME; ?></div>
-      <h2 class="system-title"><?php echo APP_NAME; ?></h2>
+  <div class="login-split-container">
+    <div class="login-split-left">
+      <div class="slideshow-container">
+        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/slideshow/slide1.jpg');"></div>
+        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/slideshow/slide2.jpg');"></div>
+        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/slideshow/slide3.jpg');"></div>
+      </div>
+      <div class="slideshow-overlay">
+        <h1>ZEAL COLLEGE OF ENGINEERING & RESEARCH</h1>
+        <p>Practical Assessment System</p>
+      </div>
     </div>
+    
+    <div class="login-split-right">
+      <div class="login-modal">
+        <div class="login-header">
+          <img src="../../assets/images/logos/banner.png" alt="" class="login-banner">
+          <h2 class="system-title"><?php echo APP_NAME; ?></h2>
+        </div>
 
     <?php if (!empty($error)): ?>
       <div class="alert alert-danger" style="margin-bottom: 1.25rem;">
@@ -123,16 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </label>
 
         <div class="role-grid">
-          <div class="role-card" data-role="student" onclick="selectRole('student', this)">
-            <span class="role-icon">🎓</span>
-            <span class="role-title">Student</span>
-          </div>
-
-          <div class="role-card" data-role="faculty" onclick="selectRole('faculty', this)">
-            <span class="role-icon">👨‍🏫</span>
-            <span class="role-title">Subject Faculty</span>
-          </div>
-
           <div class="role-card" data-role="admin" onclick="selectRole('admin', this)">
             <span class="role-icon">🛡️</span>
             <span class="role-title">Admin</span>
@@ -143,9 +145,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <span class="role-title">HOD</span>
           </div>
 
+          <div class="role-card" data-role="faculty" onclick="selectRole('faculty', this)">
+            <span class="role-icon">👨‍🏫</span>
+            <span class="role-title">Subject Faculty</span>
+          </div>
+
           <div class="role-card" data-role="gfm" onclick="selectRole('gfm', this)">
             <span class="role-icon">📋</span>
             <span class="role-title">GFM</span>
+          </div>
+
+          <div class="role-card" data-role="student" onclick="selectRole('student', this)">
+            <span class="role-icon">🎓</span>
+            <span class="role-title">Student</span>
           </div>
 
           <div class="role-card" data-role="parent" onclick="selectRole('parent', this)">
@@ -179,6 +191,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <a href="forgot_password.php" class="forgot-link">
         <i class="fas fa-key me-1"></i> Forgot Password?
       </a>
+    </div>
+  </div>
     </div>
   </div>
 
@@ -225,6 +239,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (card) {
         selectRole(savedRole, card);
       }
+    }
+    
+    // Simple Slideshow logic
+    let slideIndex = 0;
+    const slides = document.getElementsByClassName("slideshow-slide");
+    if(slides.length > 0) {
+        function showSlides() {
+          for (let i = 0; i < slides.length; i++) {
+            slides[i].style.opacity = "0";
+          }
+          slideIndex++;
+          if (slideIndex > slides.length) {slideIndex = 1}
+          slides[slideIndex-1].style.opacity = "1";
+          setTimeout(showSlides, 4000); // Change image every 4 seconds
+        }
+        showSlides();
     }
   });
   </script>

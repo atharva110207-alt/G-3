@@ -19,9 +19,11 @@ $_SESSION['class_filter'] = $selected_class;
     <button class="mobile-sidebar-toggle" id="sidebarToggleBtn" aria-label="Toggle Sidebar">
       <i class="fas fa-bars"></i>
     </button>
-    <div class="navbar-branding">
-      <h1 class="navbar-title"><?php echo COLLEGE_NAME; ?></h1>
-      <span class="navbar-subtitle"><?php echo DEPARTMENT_NAME; ?> &bull; <?php echo APP_NAME; ?></span>
+    <div class="navbar-branding" style="display: flex; align-items: center; gap: 10px;">
+      <img src="<?php echo BASE_URL; ?>assets/images/logos/logo.png" alt="Logo" style="object-fit: contain; width: 45px; height: 45px;">
+      <div>
+        <h1 class="navbar-title"><?php echo APP_NAME; ?></h1>
+      </div>
     </div>
   </div>
 

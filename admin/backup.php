@@ -2,6 +2,9 @@
 // Practical Assessment System - Database Backup Generator
 // Zeal College of Engineering & Research
 
+ini_set('memory_limit', '1024M');
+ini_set('max_execution_time', '300');
+
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
@@ -32,6 +35,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'pdf') {
         table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.85rem; }
         th, td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; }
         th { background: #1e3a8a; color: white; }
+        tr { page-break-inside: avoid; }
         tr:nth-child(even) { background: #f8fafc; }
         @media print {
           .no-print { display: none; }
@@ -65,7 +69,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'pdf') {
         ?>
         <h3>Table: `<?php echo $t; ?>` (Total Records: <?php echo $cnt; ?>)</h3>
         <?php 
-          $data_res = mysqli_query($conn, "SELECT * FROM `$t` LIMIT 20");
+          $data_res = mysqli_query($conn, "SELECT * FROM `$t`");
           if ($data_res && mysqli_num_rows($data_res) > 0):
             $fields = mysqli_fetch_fields($data_res);
         ?>

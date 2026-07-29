@@ -11,25 +11,46 @@ require_role(['admin', 'hod']);
 $error = '';
 $success = '';
 
+if (isset($_GET['delete_batch'])) {
+    $del_id = intval($_GET['delete_batch']);
+    $sql = "DELETE FROM batches WHERE id = ?";
+    $stmt = execute_prepared($conn, $sql, "i", [$del_id]);
+    if ($stmt) {
+        log_audit($conn, $user['id'], $user['role'], 'Delete Batch', 'batch_management', 'Deleted batch ID ' . $del_id);
+        set_flash('success', 'Batch deleted successfully.');
+        header('Location: create_batches.php');
+        exit();
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $batch_name = sanitize($_POST['batch_name'] ?? '');
-    $start_roll = sanitize($_POST['start_roll'] ?? '');
-    $end_roll = sanitize($_POST['end_roll'] ?? '');
     $class = sanitize($_POST['class'] ?? 'TY');
     $division = sanitize($_POST['division'] ?? 'Division C');
     $subject_assigned = sanitize($_POST['subject_assigned'] ?? '');
     $academic_year = sanitize($_POST['academic_year'] ?? DEFAULT_ACADEMIC_YEAR);
+    $student_ids = $_POST['student_ids'] ?? [];
 
-    if (empty($batch_name) || empty($start_roll) || empty($end_roll) || empty($division)) {
-        $error = "Batch Name, Start Roll Number, End Roll Number, and Division are required.";
+    if (empty($batch_name) || empty($division)) {
+        $error = "Batch Name and Division are required.";
+    } elseif (empty($student_ids)) {
+        $error = "Please select at least one student to form the batch.";
     } else {
-        $sql = "INSERT INTO batches (batch_name, start_roll, end_roll, class, division, subject_assigned, academic_year) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $stmt = execute_prepared($conn, $sql, "sssssss", [$batch_name, $start_roll, $end_roll, $class, $division, $subject_assigned, $academic_year]);
+        $sql = "INSERT INTO batches (batch_name, class, division, subject_assigned, academic_year) VALUES (?, ?, ?, ?, ?)";
+        $stmt = execute_prepared($conn, $sql, "sssss", [$batch_name, $class, $division, $subject_assigned, $academic_year]);
 
         if ($stmt) {
             $batch_id = mysqli_insert_id($conn);
             mysqli_stmt_close($stmt);
-            log_audit($conn, $user['id'], $user['role'], 'Create Batch', 'batch_management', 'Created batch ' . $batch_name . ' (' . $start_roll . '-' . $end_roll . ')');
+            
+            // Insert into batch_students
+            $bs_sql = "INSERT INTO batch_students (batch_id, student_id) VALUES (?, ?)";
+            foreach ($student_ids as $sid) {
+                $bs_stmt = execute_prepared($conn, $bs_sql, "ii", [$batch_id, intval($sid)]);
+                if ($bs_stmt) mysqli_stmt_close($bs_stmt);
+            }
+
+            log_audit($conn, $user['id'], $user['role'], 'Create Batch', 'batch_management', 'Created batch ' . $batch_name . ' with ' . count($student_ids) . ' students');
             set_flash('success', 'Batch ' . $batch_name . ' created successfully!');
             header('Location: create_batches.php');
             exit();
@@ -38,19 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-
-// Fetch existing batches
-$batches_sql = "SELECT * FROM batches ORDER BY academic_year DESC, class ASC, division ASC, batch_name ASC";
-$batches_res = mysqli_query($conn, $batches_sql);
-$batches_list = [];
-if ($batches_res) {
-    while ($b = mysqli_fetch_assoc($batches_res)) {
-        $batches_list[] = $b;
-    }
-}
 ?>
 
-<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.5rem;">
+<div style="max-width: 800px; margin: 0 auto;">
   <!-- Batch Creation Form -->
   <div class="card">
     <div class="card-header">
@@ -69,20 +80,8 @@ if ($batches_res) {
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
         <div class="form-group">
-          <label for="start_roll" class="form-label">Start Roll No <span class="text-danger">*</span></label>
-          <input type="text" id="start_roll" name="start_roll" class="form-control" placeholder="e.g. EC1301" required>
-        </div>
-
-        <div class="form-group">
-          <label for="end_roll" class="form-label">End Roll No <span class="text-danger">*</span></label>
-          <input type="text" id="end_roll" name="end_roll" class="form-control" placeholder="e.g. EC1310" required>
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-        <div class="form-group">
           <label for="class" class="form-label">Class</label>
-          <select id="class" name="class" class="form-select">
+          <select id="class" name="class" class="form-select" onchange="loadStudents()">
             <?php foreach ($CLASSES as $c): ?>
               <option value="<?php echo $c; ?>" <?php echo $c === 'TY' ? 'selected' : ''; ?>><?php echo $c; ?></option>
             <?php endforeach; ?>
@@ -91,12 +90,19 @@ if ($batches_res) {
 
         <div class="form-group">
           <label for="division" class="form-label">Division <span class="text-danger">*</span></label>
-          <select id="division" name="division" class="form-select">
+          <select id="division" name="division" class="form-select" onchange="loadStudents()">
             <option value="Division A">Division A</option>
             <option value="Division B">Division B</option>
             <option value="Division C" selected>Division C</option>
             <option value="Division D">Division D</option>
           </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Select Students for Batch <span class="text-danger">*</span></label>
+        <div id="studentsContainer">
+          <div class="alert alert-secondary text-center">Loading students...</div>
         </div>
       </div>
 
@@ -119,42 +125,33 @@ if ($batches_res) {
       </button>
     </form>
   </div>
-
-  <!-- Existing Batches Table -->
-  <div class="card">
-    <div class="card-header">
-      <h3 class="card-title"><i class="fas fa-list text-primary me-2"></i> Active Batches Directory</h3>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Batch</th>
-            <th>Class / Div</th>
-            <th>Roll Range</th>
-            <th>Assigned Subject</th>
-            <th>A.Y.</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php if (empty($batches_list)): ?>
-            <tr><td colspan="5" class="text-center" style="color: var(--text-muted);">No batches created yet.</td></tr>
-          <?php else: ?>
-            <?php foreach ($batches_list as $b): ?>
-              <tr>
-                <td><strong style="color: var(--accent-color); font-size: 1rem;"><?php echo sanitize($b['batch_name']); ?></strong></td>
-                <td><?php echo sanitize($b['class'] . ' - ' . $b['division']); ?></td>
-                <td><span class="badge badge-info"><?php echo sanitize($b['start_roll'] . ' to ' . $b['end_roll']); ?></span></td>
-                <td><?php echo sanitize($b['subject_assigned'] ?: '-'); ?></td>
-                <td><?php echo sanitize($b['academic_year']); ?></td>
-              </tr>
-            <?php endforeach; ?>
-          <?php endif; ?>
-        </tbody>
-      </table>
-    </div>
-  </div>
 </div>
+
+<script>
+function loadStudents() {
+  const cls = document.getElementById('class').value;
+  const div = document.getElementById('division').value;
+  const container = document.getElementById('studentsContainer');
+  
+  if(cls && div) {
+      container.innerHTML = '<div class="alert alert-secondary text-center">Loading...</div>';
+      fetch(`ajax_get_students.php?class=${cls}&division=${div}`)
+        .then(response => response.text())
+        .then(html => {
+            container.innerHTML = html;
+        })
+        .catch(err => {
+            container.innerHTML = '<div class="alert alert-danger">Failed to fetch students.</div>';
+        });
+  }
+}
+
+function toggleAllStudents(status) {
+    const checkboxes = document.querySelectorAll('#studentsContainer input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = status);
+}
+
+document.addEventListener('DOMContentLoaded', loadStudents);
+</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

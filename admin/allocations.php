@@ -2,7 +2,7 @@
 // Practical Assessment System - Subject Faculty Allocations Module
 // Zeal College of Engineering & Research
 
-$page_title = "Subject Allocation";
+$page_title = "Batch Allocation";
 require_once __DIR__ . '/../includes/header.php';
 
 // Restricted to Admin & HOD
@@ -125,10 +125,9 @@ if (isset($_GET['edit_id'])) {
   <!-- Allocation Form -->
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title">
-        <i class="fas fa-tasks text-primary me-2"></i> 
-        <?php echo $edit_alloc ? 'Edit Subject Allocation' : 'Assign Subject Faculty'; ?>
-      </h3>
+        <h3 class="card-title"><i class="fas fa-user-plus text-primary me-2"></i> 
+        <?php echo $edit_alloc ? 'Edit Batch Allocation' : 'Assign Batch to Faculty'; ?>
+        </h3>
       <?php if ($edit_alloc): ?>
         <a href="allocations.php" class="btn btn-secondary btn-sm">Cancel Edit</a>
       <?php endif; ?>

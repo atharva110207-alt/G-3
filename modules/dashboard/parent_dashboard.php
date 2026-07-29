@@ -13,9 +13,12 @@ $my_evaluations = [];
 $att_percentage = 100;
 
 if (!empty($student_roll)) {
+    // Sanitize and normalize roll number for DB (strip non-numeric characters)
+    $db_roll_no = preg_replace('/[^0-9]/', '', $student_roll);
+
     // Fetch Linked Student Record
     $st_sql = "SELECT id, full_name, email, student_roll_no, zprn, class, division FROM users WHERE student_roll_no = ? AND role = 'student'";
-    $st_stmt = execute_prepared($conn, $st_sql, "s", [$student_roll]);
+    $st_stmt = execute_prepared($conn, $st_sql, "s", [$db_roll_no]);
     if ($st_stmt) {
         $res = mysqli_stmt_get_result($st_stmt);
         $student_info = mysqli_fetch_assoc($res);

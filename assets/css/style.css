@@ -6,10 +6,10 @@
   --bg-primary: #0D1117;          /* Deep Navy Canvas Default */
   --bg-canvas: #161B22;           /* Card / Canvas Surface */
   --bg-card: #161B22;
-  --bg-sidebar: #eef2ff;        /* Light Lavender Sidebar */
-  --sidebar-text: #312e81;       /* Dark Indigo for Sidebar Text */
+  --bg-sidebar: #f8fafc;        /* Inverted Light Sidebar for Dark Canvas */
+  --sidebar-text: #0f172a;       /* Dark Text for Sidebar */
   --sidebar-text-active: #ffffff;
-  --sidebar-hover: #e0e7ff;
+  --sidebar-hover: #e2e8f0;
   --sidebar-active-bg: #6366F1;  /* Vibrant Indigo / Neon Accent */
   
   --text-primary: #f3f4f6;       /* Bright White / Off-white for Deep Navy */
@@ -48,10 +48,10 @@
   --bg-primary: #f8fafc;
   --bg-canvas: #ffffff;
   --bg-card: #ffffff;
-  --bg-sidebar: #eef2ff;
-  --sidebar-text: #312e81;
+  --bg-sidebar: #0D1117;
+  --sidebar-text: #ffffff;
   --sidebar-text-active: #ffffff;
-  --sidebar-hover: #e0e7ff;
+  --sidebar-hover: #1f2937;
   --sidebar-active-bg: #6366F1;
   
   --text-primary: #0f172a;
@@ -265,6 +265,11 @@ a:hover {
 .form-control:focus, .form-select:focus {
   border-color: #6366F1 !important;
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.5) !important;
+}
+
+select.form-control option, select.form-select option {
+  background-color: var(--bg-card, #1e293b);
+  color: var(--text-primary, #ffffff);
 }
 
 /* Buttons System */

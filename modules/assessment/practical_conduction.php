@@ -82,22 +82,12 @@ if ($practical_id > 0) {
     if ($selected_pract) {
         $b_id = $selected_pract['batch_id'];
         
-        $b_sql = "SELECT * FROM batches WHERE id = ?";
-        $b_stmt = execute_prepared($conn, $b_sql, "i", [$b_id]);
-        $batch_info = null;
-        if ($b_stmt) {
-            $res = mysqli_stmt_get_result($b_stmt);
-            $batch_info = mysqli_fetch_assoc($res);
-            mysqli_stmt_close($b_stmt);
-        }
-
-        if ($batch_info && !empty($batch_info['start_roll']) && !empty($batch_info['end_roll'])) {
-            $st_sql = "SELECT id, full_name, student_roll_no, zprn FROM users WHERE role = 'student' AND student_roll_no >= ? AND student_roll_no <= ? ORDER BY student_roll_no ASC";
-            $st_stmt = execute_prepared($conn, $st_sql, "ss", [$batch_info['start_roll'], $batch_info['end_roll']]);
-        } else {
-            $st_sql = "SELECT id, full_name, student_roll_no, zprn FROM users WHERE role = 'student' AND division = ? ORDER BY student_roll_no ASC";
-            $st_stmt = execute_prepared($conn, $st_sql, "s", [$selected_pract['division']]);
-        }
+        $st_sql = "SELECT u.id, u.full_name, u.student_roll_no, u.zprn 
+                   FROM users u 
+                   JOIN batch_students bs ON u.id = bs.student_id 
+                   WHERE bs.batch_id = ? 
+                   ORDER BY u.student_roll_no ASC";
+        $st_stmt = execute_prepared($conn, $st_sql, "i", [$b_id]);
 
         if ($st_stmt) {
             $res = mysqli_stmt_get_result($st_stmt);
@@ -105,6 +95,19 @@ if ($practical_id > 0) {
                 $students_roster[] = $st;
             }
             mysqli_stmt_close($st_stmt);
+        }
+
+        // Fallback if batch has no explicit students (legacy behavior)
+        if (empty($students_roster)) {
+            $st_sql = "SELECT id, full_name, student_roll_no, zprn FROM users WHERE role = 'student' AND division = ? ORDER BY student_roll_no ASC";
+            $st_stmt = execute_prepared($conn, $st_sql, "s", [$selected_pract['division']]);
+            if ($st_stmt) {
+                $res = mysqli_stmt_get_result($st_stmt);
+                while ($st = mysqli_fetch_assoc($res)) {
+                    $students_roster[] = $st;
+                }
+                mysqli_stmt_close($st_stmt);
+            }
         }
 
         // Fetch Existing Assessment Scores

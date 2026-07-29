@@ -58,8 +58,9 @@ if (!empty($experiments)) {
   <style>
     body { font-family: Arial, sans-serif; margin: 1.5rem; color: #0f172a; line-height: 1.4; font-size: 12px; }
     .header { text-align: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 0.75rem; margin-bottom: 1rem; }
-    .header h1 { margin: 0; color: #1e3a8a; font-size: 16px; }
-    .header h2 { margin: 2px 0; font-size: 13px; color: #475569; }
+    .header h1 { margin: 0; color: #1e3a8a; font-size: 16px; display: none; }
+    .header h2 { margin: 2px 0; font-size: 13px; color: #475569; display: none; }
+    .print-banner { width: 100%; max-width: 100%; height: auto; display: block; margin-bottom: 10px; }
     .meta { display: flex; justify-content: space-between; margin-bottom: 1rem; background: #f8fafc; padding: 8px 12px; border-radius: 6px; font-weight: bold; border: 1px solid #e2e8f0; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
     th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
@@ -78,8 +79,7 @@ if (!empty($experiments)) {
   </div>
 
   <div class="header">
-    <h1><?php echo COLLEGE_NAME; ?></h1>
-    <h2><?php echo DEPARTMENT_NAME; ?> &bull; <?php echo APP_NAME; ?></h2>
+    <img src="../assets/images/logos/banner.png" alt="Zeal College Banner" class="print-banner">
     <h3>OFFICIAL TERMWORK MARKSHEET SUMMARY</h3>
   </div>
 

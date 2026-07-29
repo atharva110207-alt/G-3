@@ -10,8 +10,18 @@ $division_filter = $_GET['division'] ?? 'Division C';
 $subject_filter = $_GET['subject'] ?? 'Microprocessors & Microcontrollers';
 
 // Fetch Students in Division & Class
-$st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
-$st_stmt = execute_prepared($conn, $st_sql, "ss", [$class_filter, $division_filter]);
+$st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ?";
+$params = [$class_filter, $division_filter];
+$types = "ss";
+
+if ($_SESSION['role'] === 'student') {
+    $st_sql .= " AND student_roll_no = ?";
+    $params[] = $_SESSION['student_roll_no'];
+    $types .= "s";
+}
+
+$st_sql .= " ORDER BY student_roll_no ASC";
+$st_stmt = execute_prepared($conn, $st_sql, $types, $params);
 $students = [];
 if ($st_stmt) {
     $res = mysqli_stmt_get_result($st_stmt);

@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `assessment`;
 DROP TABLE IF EXISTS `attendance`;
 DROP TABLE IF EXISTS `practicals`;
+DROP TABLE IF EXISTS `batch_students`;
 DROP TABLE IF EXISTS `faculty_allocations`;
 DROP TABLE IF EXISTS `batches`;
 DROP TABLE IF EXISTS `users`;
@@ -25,14 +26,23 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `full_name` VARCHAR(100) NOT NULL,
-  `email` VARCHAR(100) UNIQUE NOT NULL,
-  `password` VARCHAR(255) NOT NULL, -- Stored as Plain Text per requirements specification
-  `role` ENUM('admin', 'hod', 'gfm', 'faculty', 'student', 'parent') NOT NULL,
+  `email` VARCHAR(100) NOT NULL UNIQUE,
+  `password` VARCHAR(255) NOT NULL,
+  `role` ENUM('admin', 'hod', 'faculty', 'gfm', 'student', 'parent') NOT NULL,
+  
+  -- Student Specific
   `student_roll_no` VARCHAR(20) DEFAULT NULL,
-  `zprn` VARCHAR(50) DEFAULT NULL,
-  `class` ENUM('FY', 'SY', 'TY', 'BY') DEFAULT 'TY',
-  `division` VARCHAR(10) DEFAULT 'Division C',
-  `phone` VARCHAR(20) DEFAULT NULL,
+  `zprn` VARCHAR(20) DEFAULT NULL,
+  `class` ENUM('FY', 'SY', 'TY', 'BY') DEFAULT NULL,
+  `division` VARCHAR(10) DEFAULT NULL,
+  
+  -- Contact (Used across roles)
+  `phone` VARCHAR(15) DEFAULT NULL,
+  
+  -- Reset Password Fields
+  `reset_otp` VARCHAR(6) DEFAULT NULL,
+  `otp_expires_at` DATETIME DEFAULT NULL,
+
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_role` (`role`),
   INDEX `idx_roll` (`student_roll_no`),
@@ -45,14 +55,25 @@ CREATE TABLE `users` (
 CREATE TABLE `batches` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `batch_name` VARCHAR(50) NOT NULL,
-  `start_roll` VARCHAR(20) NOT NULL,
-  `end_roll` VARCHAR(20) NOT NULL,
+  `start_roll` VARCHAR(20) NULL,
+  `end_roll` VARCHAR(20) NULL,
   `class` ENUM('FY', 'SY', 'TY', 'BY') NOT NULL DEFAULT 'TY',
   `division` VARCHAR(10) NOT NULL,
   `subject_assigned` VARCHAR(100) DEFAULT NULL,
   `academic_year` VARCHAR(20) NOT NULL DEFAULT '2026-2027',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_batch_div` (`class`, `division`, `batch_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: batch_students
+-- --------------------------------------------------------
+CREATE TABLE `batch_students` (
+  `batch_id` INT NOT NULL,
+  `student_id` INT NOT NULL,
+  PRIMARY KEY (`batch_id`, `student_id`),
+  CONSTRAINT `fk_batch_students_batch` FOREIGN KEY (`batch_id`) REFERENCES `batches` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_batch_students_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -265,6 +286,12 @@ INSERT INTO `users` (`id`, `full_name`, `email`, `password`, `role`, `student_ro
 INSERT INTO `batches` (`id`, `batch_name`, `start_roll`, `end_roll`, `class`, `division`, `subject_assigned`, `academic_year`) VALUES
 (1, 'C1', '1301', '1328', 'FY', 'Division C', 'Microprocessors & Microcontrollers', '2025-2026'),
 (2, 'C2', '1329', '1358', 'FY', 'Division C', 'Digital Signal Processing', '2025-2026');
+
+-- 8.5 Batch Students Map
+INSERT INTO `batch_students` (`batch_id`, `student_id`)
+SELECT 1, id FROM users WHERE role = 'student' AND student_roll_no >= '1301' AND student_roll_no <= '1328';
+INSERT INTO `batch_students` (`batch_id`, `student_id`)
+SELECT 2, id FROM users WHERE role = 'student' AND student_roll_no >= '1329' AND student_roll_no <= '1358';
 
 -- 9. Subject Faculty Allocations
 INSERT INTO `faculty_allocations` (`id`, `faculty_id`, `subject_name`, `class`, `division`, `batch_id`, `academic_year`) VALUES

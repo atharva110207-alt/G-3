@@ -104,10 +104,10 @@ if ($alloc_res) {
   </div>
 </div>
 
-<!-- Subject Allocations Management for HOD -->
+<!-- Batch Allocations Management for HOD -->
 <div class="card">
   <div class="card-header">
-    <h3 class="card-title"><i class="fas fa-tasks text-primary me-2"></i> Department Subject Faculty Allocations</h3>
+    <h3 class="card-title"><i class="fas fa-tasks text-success me-2"></i> Active Batch Allocations</h3>
     <a href="<?php echo BASE_URL; ?>admin/allocations.php" class="btn btn-primary btn-sm">
       <i class="fas fa-edit me-1"></i> Edit & Allocate Subjects
     </a>

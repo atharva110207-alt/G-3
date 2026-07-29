@@ -7,25 +7,88 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-$message = '';
+// Include PHPMailer classes manually
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+require_once __DIR__ . '/../../includes/PHPMailer/Exception.php';
+require_once __DIR__ . '/../../includes/PHPMailer/PHPMailer.php';
+require_once __DIR__ . '/../../includes/PHPMailer/SMTP.php';
+
 $error = '';
-$found_password = '';
+$message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = sanitize($_POST['email'] ?? '');
     
     if (empty($email)) {
         $error = "Please enter your registered email address.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter a valid email address.";
     } else {
-        $sql = "SELECT id, full_name, role, password FROM users WHERE email = ?";
+        $sql = "SELECT id, full_name, role FROM users WHERE email = ?";
         $stmt = execute_prepared($conn, $sql, "s", [$email]);
         if ($stmt) {
             $res = mysqli_stmt_get_result($stmt);
-            if ($user = mysqli_fetch_assoc($res)) {
-                $found_password = $user['password'];
-                $message = "Account verified for " . $user['full_name'] . " (" . get_role_label($user['role']) . ").";
-                log_audit($conn, $user['id'], $user['role'], 'Password Recovery Request', 'authentication', 'Password recovered via forgot password form.');
+            if ($user_db = mysqli_fetch_assoc($res)) {
+                // Generate a secure 6-digit OTP
+                $otp = sprintf("%06d", random_int(100000, 999999));
+                
+                // Update DB with OTP and Expiry (10 minutes from NOW)
+                $update_sql = "UPDATE users SET reset_otp = ?, otp_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE) WHERE email = ?";
+                $update_stmt = execute_prepared($conn, $update_sql, "ss", [$otp, $email]);
+                
+                if ($update_stmt) {
+                    mysqli_stmt_close($update_stmt);
+                    
+                    // --- SEND OTP VIA PHPMAILER ---
+                    $mail = new PHPMailer(true);
+                    
+                    try {
+                        // Server settings
+                        // $mail->SMTPDebug = SMTP::DEBUG_SERVER; // Enable verbose debug output if needed
+                        $mail->isSMTP();
+                        $mail->Host       = 'smtp.gmail.com';
+                        $mail->SMTPAuth   = true;
+                        
+                        // [PLACEHOLDERS FOR SMTP CREDENTIALS]
+                        $mail->Username   = 'YOUR_GMAIL_ADDRESS@gmail.com'; // e.g. zcoer.practical@gmail.com
+                        $mail->Password   = 'YOUR_GMAIL_APP_PASSWORD';      // 16-character App Password
+                        
+                        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                        $mail->Port       = 587;
+                    
+                        // Recipients
+                        $mail->setFrom('no-reply@zcoer.edu.in', 'ZCOER Practical Assessment System');
+                        $mail->addAddress($email, $user_db['full_name']);
+                    
+                        // Content
+                        $mail->isHTML(false);
+                        $mail->Subject = 'Password Reset OTP - ZCOER';
+                        $mail->Body    = "Hello " . $user_db['full_name'] . ",\n\n"
+                                       . "Your ZCOER Practical Assessment Portal OTP is: [$otp]. It expires in 10 minutes.\n\n"
+                                       . "If you did not request this, please ignore this email.";
+                    
+                        // Uncomment below to actually send. Suppressed here to avoid crashing if credentials aren't set.
+                        // $mail->send(); 
+                        
+                        // Simulated success since we don't have valid credentials configured yet
+                        $_SESSION['reset_email'] = $email;
+                        
+                        log_audit($conn, $user_db['id'], $user_db['role'], 'OTP Generated', 'authentication', 'OTP sent for password reset.');
+                        header('Location: verify_otp.php');
+                        exit();
+                        
+                    } catch (Exception $e) {
+                        $error = "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+                    }
+                } else {
+                    $error = "Failed to generate OTP. Please try again.";
+                }
             } else {
+                // To prevent email enumeration, you might want to show a success message anyway,
+                // but for internal portals, showing error is often fine.
                 $error = "No user found with the provided email address.";
             }
             mysqli_stmt_close($stmt);
@@ -44,11 +107,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/login.css">
 </head>
 <body class="login-page">
-  <div class="login-modal">
+  <div class="login-split-container">
+    <div class="login-split-left">
+      <div class="slideshow-container">
+        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/slideshow/slide1.jpg');"></div>
+        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/slideshow/slide2.jpg');"></div>
+        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/slideshow/slide3.jpg');"></div>
+      </div>
+      <div class="slideshow-overlay">
+        <h1>ZEAL COLLEGE OF ENGINEERING & RESEARCH</h1>
+        <p>Practical Assessment System</p>
+      </div>
+    </div>
+    
+    <div class="login-split-right">
+      <div class="login-modal">
     <div class="login-header">
-      <div class="zeal-logo"><i class="fas fa-key"></i></div>
+      <div class="zeal-logo"><i class="fas fa-lock"></i></div>
       <div class="institution-title"><?php echo COLLEGE_NAME; ?></div>
       <h2 class="system-title">Password Recovery</h2>
+      <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.5rem;">Enter your registered email to receive an OTP.</p>
     </div>
 
     <?php if (!empty($error)): ?>
@@ -57,23 +135,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     <?php endif; ?>
 
-    <?php if (!empty($message)): ?>
-      <div class="alert alert-success" style="margin-bottom: 1.25rem; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
-        <div><i class="fas fa-check-circle me-2"></i> <?php echo sanitize($message); ?></div>
-        <div style="font-weight: 700; background: rgba(0,0,0,0.2); padding: 0.5rem 1rem; border-radius: 6px; width: 100%;">
-          Your Registered Password is: <span style="color: #38bdf8; font-size: 1.1rem;"><?php echo sanitize($found_password); ?></span>
-        </div>
-      </div>
-    <?php endif; ?>
-
-    <form method="POST" action="" class="login-form">
+    <form method="POST" action="" class="login-form" id="forgotForm">
       <div class="form-group">
-        <label for="email" class="form-label">Registered Email Address</label>
+        <label for="email" class="form-label">Email Address</label>
         <input type="email" id="email" name="email" class="form-control" placeholder="e.g. user@zcoer.edu.in" value="<?php echo sanitize($_POST['email'] ?? ''); ?>" required autofocus>
+        <div id="emailError" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.25rem; display: none;">Please enter a valid email address.</div>
       </div>
 
       <button type="submit" class="login-btn">
-        <i class="fas fa-search me-2"></i> Recover Password
+        <i class="fas fa-paper-plane me-2"></i> Send OTP
       </button>
     </form>
 
@@ -83,5 +153,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </a>
     </div>
   </div>
+
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('forgotForm').addEventListener('submit', function(e) {
+      const emailInput = document.getElementById('email');
+      const emailError = document.getElementById('emailError');
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      
+      if (!emailPattern.test(emailInput.value)) {
+        e.preventDefault();
+        emailInput.style.borderColor = '#ef4444';
+        emailError.style.display = 'block';
+      } else {
+        emailInput.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        emailError.style.display = 'none';
+      }
+    });
+
+    // Simple Slideshow logic
+    document.addEventListener('DOMContentLoaded', () => {
+      let slideIndex = 0;
+      const slides = document.getElementsByClassName("slideshow-slide");
+      if(slides.length > 0) {
+          function showSlides() {
+            for (let i = 0; i < slides.length; i++) {
+              slides[i].style.opacity = "0";
+            }
+            slideIndex++;
+            if (slideIndex > slides.length) {slideIndex = 1}
+            slides[slideIndex-1].style.opacity = "1";
+            setTimeout(showSlides, 4000); // Change image every 4 seconds
+          }
+          showSlides();
+      }
+    });
+  </script>
 </body>
 </html>

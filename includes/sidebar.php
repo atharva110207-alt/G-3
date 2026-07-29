@@ -23,7 +23,7 @@ function is_active($page_names) {
 
 <aside class="app-sidebar" id="appSidebar">
   <div class="sidebar-brand">
-    <div class="brand-icon">Z</div>
+    <img src="<?php echo BASE_URL; ?>assets/images/logos/logo.png" alt="Logo" style="object-fit: contain; width: 40px; height: 40px; flex-shrink: 0;">
     <div class="brand-text">
       <span class="brand-title">ZEAL PAS</span>
       <span class="brand-sub">ECE Department</span>
@@ -50,16 +50,20 @@ function is_active($page_names) {
         <i class="fas fa-layer-group menu-icon"></i>
         <span>Manual Batches</span>
       </a>
+      <a href="<?php echo BASE_URL; ?>admin/edit_batches.php" class="menu-item <?php echo is_active(['edit_batches.php']); ?>">
+        <i class="fas fa-list menu-icon"></i>
+        <span>Edit Existing Batches</span>
+      </a>
       <a href="<?php echo BASE_URL; ?>admin/allocations.php" class="menu-item <?php echo is_active(['allocations.php']); ?>">
         <i class="fas fa-tasks menu-icon"></i>
-        <span>Subject Allocation</span>
+        <span>Batch Allocation</span>
       </a>
     <?php endif; ?>
 
     <?php if ($user_role === 'hod'): ?>
       <a href="<?php echo BASE_URL; ?>admin/allocations.php" class="menu-item <?php echo is_active(['allocations.php']); ?>">
         <i class="fas fa-tasks menu-icon"></i>
-        <span>Subject Allocation</span>
+        <span>Batch Allocation</span>
       </a>
       <a href="<?php echo BASE_URL; ?>reports/final_marksheet.php" class="menu-item <?php echo is_active(['final_marksheet.php', 'assesment_report.php']); ?>">
         <i class="fas fa-clipboard-check menu-icon"></i>
@@ -165,12 +169,12 @@ function is_active($page_names) {
   background: linear-gradient(135deg, #6366F1, #38bdf8);
   color: #ffffff;
   border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 1.25rem;
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+  /* display: flex; */
+  /* align-items: center; */
+  /* justify-content: center; */
+  /* font-weight: 900; */
+  /* font-size: 1.25rem; */
+  /* box-shadow: 0 0 12px rgba(99, 102, 241, 0.4); */
 }
 
 .brand-title {

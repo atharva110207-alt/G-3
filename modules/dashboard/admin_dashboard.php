@@ -57,7 +57,7 @@ if ($log_res) {
     <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;"><i class="fas fa-tasks"></i></div>
     <div class="stat-info">
       <h3><?php echo $total_allocations; ?></h3>
-      <p>Subject Allocations</p>
+      <p>Batch Allocations</p>
     </div>
   </div>
 
@@ -83,7 +83,7 @@ if ($log_res) {
       <i class="fas fa-layer-group fa-lg me-2 text-accent"></i> Manual Batch Creation
     </a>
     <a href="<?php echo BASE_URL; ?>admin/allocations.php" class="btn btn-secondary" style="justify-content: center; padding: 1rem;">
-      <i class="fas fa-tasks fa-lg me-2 style-success"></i> Subject Allocation
+      <i class="fas fa-tasks fa-lg me-2 style-success"></i> Batch Allocation
     </a>
     <a href="<?php echo BASE_URL; ?>admin/audit_logs.php" class="btn btn-secondary" style="justify-content: center; padding: 1rem;">
       <i class="fas fa-shield-alt fa-lg me-2 style-warning"></i> View System Audit Logs

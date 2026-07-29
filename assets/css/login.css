@@ -3,11 +3,81 @@
 
 .login-page {
   min-height: 100vh;
+  margin: 0;
+  display: flex;
+  background: #0F172A;
+}
+
+.login-split-container {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+}
+
+.login-split-left {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: none;
+}
+
+@media (min-width: 992px) {
+  .login-split-left {
+    display: block;
+  }
+}
+
+.slideshow-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.slideshow-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+}
+
+.slideshow-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 4rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.95), transparent);
+  color: #fff;
+  z-index: 10;
+}
+
+.slideshow-overlay h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.slideshow-overlay p {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.login-split-right {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 2rem;
   background: radial-gradient(circle at top, #1E293B 0%, #0F172A 100%);
-  padding: 1.5rem;
 }
 
 .login-modal {
@@ -39,36 +109,14 @@
   margin-bottom: 1.5rem;
 }
 
-.zeal-logo {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 0.75rem auto;
-  background: linear-gradient(135deg, #4F46E5, #6366F1);
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  font-size: 2rem;
-  font-weight: 900;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
-}
-
-.institution-title {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #f8fafc;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 0.2rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.department-title {
-  font-size: 0.75rem;
-  color: #cbd5e1;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
+.login-banner {
+  width: calc(100% + 4rem);
+  max-width: calc(100% + 4rem);
+  height: auto;
+  display: block;
+  margin: -2.25rem -2rem 1rem -2rem;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
 }
 
 .system-title {
