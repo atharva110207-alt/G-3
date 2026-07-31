@@ -97,9 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
+  <script>
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Forgot Password - <?php echo APP_NAME; ?> | Zeal College</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -107,16 +111,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/login.css">
 </head>
 <body class="login-page">
+  <button id="themeToggle" style="position: absolute; top: 20px; right: 20px; z-index: 9999; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; border: 1px solid var(--text-muted); background: var(--bg-card); color: var(--text-primary);">
+     <i class="fas fa-moon" id="themeIcon"></i>
+  </button>
   <div class="login-split-container">
     <div class="login-split-left">
       <div class="slideshow-container">
-        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/slideshow/slide1.jpg');"></div>
-        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/slideshow/slide2.jpg');"></div>
-        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/slideshow/slide3.jpg');"></div>
+        <div class="slideshow-slide fade" style="background-image: url('../../assets/images/background/background.jpeg'); opacity: 1;"></div>
       </div>
       <div class="slideshow-overlay">
+        <img src="<?php echo 'http://' . $_SERVER['HTTP_HOST'] . '/G-3/assets/images/logos/logo.png'; ?>" alt="ZEAL Logo" style="width: 160px; max-width: 100%; height: auto; margin-bottom: 20px;">
         <h1>ZEAL COLLEGE OF ENGINEERING & RESEARCH</h1>
-        <p>Practical Assessment System</p>
+        <p>Practical Assessment and Laboratory Performance Management System</p>
       </div>
     </div>
     
@@ -148,9 +154,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 
     <div class="login-footer">
-      <a href="login.php" class="forgot-link">
-        <i class="fas fa-arrow-left me-1"></i> Back to Login Page
-      </a>
+      <?php if (isset($_SESSION['user_id'])): ?>
+        <a href="<?php echo get_role_dashboard($_SESSION['role']); ?>" class="forgot-link">
+          <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+        </a>
+      <?php else: ?>
+        <a href="login.php" class="forgot-link">
+          <i class="fas fa-arrow-left me-1"></i> Back to Login Page
+        </a>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -189,6 +201,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           }
           showSlides();
       }
+    });
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const toggleBtn = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const currentTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
+
+        // Apply on load
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        themeIcon.className = currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+
+        // Toggle Event
+        toggleBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            let newTheme = theme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeIcon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        });
     });
   </script>
 </body>

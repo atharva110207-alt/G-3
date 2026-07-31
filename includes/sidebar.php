@@ -21,11 +21,11 @@ function is_active($page_names) {
 }
 ?>
 
-<aside class="app-sidebar" id="appSidebar">
+<aside class="app-sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <img src="<?php echo BASE_URL; ?>assets/images/logos/logo.png" alt="Logo" style="object-fit: contain; width: 40px; height: 40px; flex-shrink: 0;">
+    <img src="/G-3/assets/images/logos/logo.png" alt="ZEAL Logo" onerror="this.onerror=null; this.src='/G-3/assets/images/logos/Logo.png';" style="object-fit: contain; width: 40px; height: 40px; flex-shrink: 0;">
     <div class="brand-text">
-      <span class="brand-title">ZEAL PAS</span>
+      <span class="brand-title">ZEAL PALPMS</span>
       <span class="brand-sub">ECE Department</span>
     </div>
   </div>
@@ -110,9 +110,13 @@ function is_active($page_names) {
       <i class="fas fa-book-open menu-icon"></i>
       <span><?php echo ($user_role === 'admin' || $user_role === 'hod') ? 'Syllabus Upload' : 'View Syllabus'; ?></span>
     </a>
-    <a href="<?php echo BASE_URL; ?>reports/final_marksheet.php" class="menu-item <?php echo is_active(['final_marksheet.php', 'export_excel.php', 'export_pdf.php']); ?>">
+    <a href="<?php echo BASE_URL; ?>reports/attendance_report.php" class="menu-item <?php echo is_active(['attendance_report.php']); ?>">
+      <i class="fas fa-calendar-check menu-icon"></i>
+      <span>Practical Attendance</span>
+    </a>
+    <a href="<?php echo BASE_URL; ?>reports/final_marksheet.php" class="menu-item <?php echo is_active(['final_marksheet.php', 'assesment_report.php']); ?>">
       <i class="fas fa-file-alt menu-icon"></i>
-      <span>Reports & Analytics</span>
+      <span>Practical Marksheet</span>
     </a>
 
     <!-- SECTION: ACCOUNT -->
@@ -136,7 +140,7 @@ function is_active($page_names) {
       </a>
     <?php endif; ?>
 
-    <a href="<?php echo BASE_URL; ?>modules/authentication/logout.php" class="menu-item text-danger">
+    <a href="/G-3/modules/authentication/logout.php" class="nav-link text-danger menu-item">
       <i class="fas fa-sign-out-alt menu-icon"></i>
       <span>Logout</span>
     </a>
@@ -243,5 +247,26 @@ function is_active($page_names) {
 
 .text-danger:hover {
   background-color: #fee2e2 !important;
+}
+
+/* Collapsed State Styles */
+.app-sidebar.collapsed {
+  width: 80px;
+}
+.app-sidebar.collapsed .brand-text,
+.app-sidebar.collapsed .menu-item span,
+.app-sidebar.collapsed .menu-section-label {
+  display: none;
+}
+.app-sidebar.collapsed .sidebar-brand {
+  justify-content: center;
+  padding: 1.5rem 0;
+}
+.app-sidebar.collapsed .menu-item {
+  justify-content: center;
+  padding: 0.75rem;
+}
+.app-sidebar.collapsed .menu-icon {
+  margin: 0;
 }
 </style>

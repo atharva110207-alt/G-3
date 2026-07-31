@@ -50,6 +50,8 @@ function get_role_dashboard($role) {
             return BASE_URL . 'modules/dashboard/hod_dashboard.php';
         case 'gfm':
             return BASE_URL . 'modules/dashboard/gfm_dashboard.php';
+        case 'class_teacher':
+            return BASE_URL . 'modules/dashboard/class_teacher_dashboard.php';
         case 'faculty':
             return BASE_URL . 'modules/dashboard/faculty_dashboard.php';
         case 'student':

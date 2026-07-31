@@ -10,6 +10,11 @@ require_role(['faculty', 'admin', 'hod']);
 $delete_id = intval($_GET['id'] ?? 0);
 if ($delete_id > 0) {
     $sql = "DELETE FROM practicals WHERE id = ?";
+    
+    // First remove dependencies to avoid orphans
+    execute_prepared($conn, "DELETE FROM attendance WHERE practical_id = ?", "i", [$delete_id]);
+    execute_prepared($conn, "DELETE FROM assessment WHERE practical_id = ?", "i", [$delete_id]);
+    
     $stmt = execute_prepared($conn, $sql, "i", [$delete_id]);
     if ($stmt) {
         mysqli_stmt_close($stmt);

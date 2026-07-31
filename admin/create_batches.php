@@ -2,11 +2,16 @@
 // Practical Assessment System - Manual Batch Creation Module
 // Zeal College of Engineering & Research
 
-$page_title = "Manual Batch Creation";
-require_once __DIR__ . '/../includes/header.php';
+// Include all necessary dependencies BEFORE any HTML output
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 // Restricted to Admin & HOD
 require_role(['admin', 'hod']);
+$user = get_logged_user();
 
 $error = '';
 $success = '';
@@ -27,7 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $batch_name = sanitize($_POST['batch_name'] ?? '');
     $class = sanitize($_POST['class'] ?? 'TY');
     $division = sanitize($_POST['division'] ?? 'Division C');
-    $subject_assigned = sanitize($_POST['subject_assigned'] ?? '');
     $academic_year = sanitize($_POST['academic_year'] ?? DEFAULT_ACADEMIC_YEAR);
     $student_ids = $_POST['student_ids'] ?? [];
 
@@ -36,8 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($student_ids)) {
         $error = "Please select at least one student to form the batch.";
     } else {
-        $sql = "INSERT INTO batches (batch_name, class, division, subject_assigned, academic_year) VALUES (?, ?, ?, ?, ?)";
-        $stmt = execute_prepared($conn, $sql, "sssss", [$batch_name, $class, $division, $subject_assigned, $academic_year]);
+        $sql = "INSERT INTO batches (batch_name, class, division, academic_year) VALUES (?, ?, ?, ?)";
+        $stmt = execute_prepared($conn, $sql, "ssss", [$batch_name, $class, $division, $academic_year]);
 
         if ($stmt) {
             $batch_id = mysqli_insert_id($conn);
@@ -59,13 +63,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+$page_title = "Create Practical Batch";
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div style="max-width: 800px; margin: 0 auto;">
   <!-- Batch Creation Form -->
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title"><i class="fas fa-layer-group text-primary me-2"></i> Manual Batch Creation</h3>
+      <h3 class="card-title"><i class="fas fa-layer-group text-primary me-2"></i> Create Practical Batch</h3>
     </div>
 
     <?php if (!empty($error)): ?>
@@ -73,9 +80,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST" action="">
-      <div class="form-group">
-        <label for="batch_name" class="form-label">Batch Name (e.g. C1, C2, A1) <span class="text-danger">*</span></label>
-        <input type="text" id="batch_name" name="batch_name" class="form-control" placeholder="e.g. C1" required>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label for="academic_year" class="form-label">Academic Year (AY)</label>
+          <select id="academic_year" name="academic_year" class="form-select">
+            <?php foreach ($ACADEMIC_YEARS as $ay): ?>
+              <option value="<?php echo $ay; ?>"><?php echo $ay; ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="semester" class="form-label">Semester (SEM)</label>
+          <select id="semester" name="semester" class="form-select">
+            <option value="SEM 1">SEM 1</option>
+            <option value="SEM 2">SEM 2</option>
+            <option value="SEM 3">SEM 3</option>
+            <option value="SEM 4">SEM 4</option>
+            <option value="SEM 5">SEM 5</option>
+            <option value="SEM 6">SEM 6</option>
+            <option value="SEM 7">SEM 7</option>
+            <option value="SEM 8">SEM 8</option>
+          </select>
+        </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -100,25 +127,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
 
       <div class="form-group">
+        <label for="batch_name" class="form-label">Batch Name (e.g. C1, C2, A1) <span class="text-danger">*</span></label>
+        <input type="text" id="batch_name" name="batch_name" class="form-control" placeholder="e.g. C1" required>
+      </div>
+
+      <div class="form-group">
         <label class="form-label">Select Students for Batch <span class="text-danger">*</span></label>
         <div id="studentsContainer">
           <div class="alert alert-secondary text-center">Loading students...</div>
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="subject_assigned" class="form-label">Assigned Subject</label>
-        <input type="text" id="subject_assigned" name="subject_assigned" class="form-control" placeholder="e.g. Microprocessors & Microcontrollers">
-      </div>
 
-      <div class="form-group">
-        <label for="academic_year" class="form-label">Academic Year</label>
-        <select id="academic_year" name="academic_year" class="form-select">
-          <?php foreach ($ACADEMIC_YEARS as $ay): ?>
-            <option value="<?php echo $ay; ?>"><?php echo $ay; ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
 
       <button type="submit" class="btn btn-primary">
         <i class="fas fa-plus-circle me-2"></i> Create Batch

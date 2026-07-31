@@ -50,6 +50,26 @@ if ($alloc_stmt) {
   </div>
 </div>
 
+<!-- Allocated Batch Cards -->
+<div style="margin-bottom: 2rem;">
+  <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;"><i class="fas fa-layer-group text-primary me-2"></i> My Allocated Batches</h3>
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <?php if (empty($my_allocations)): ?>
+      <div class="alert alert-secondary w-100">No batches allocated to you yet.</div>
+    <?php else: ?>
+      <?php foreach ($my_allocations as $alloc): ?>
+        <a href="<?php echo BASE_URL; ?>modules/practical_management/create_practical.php?subject=<?php echo urlencode($alloc['subject_name']); ?>" class="card" style="width: 250px; text-decoration: none; padding: 1.25rem; border: 1px solid var(--border-color); border-top: 3px solid var(--primary-color);">
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?php echo sanitize($alloc['subject_name']); ?>">
+            <?php echo sanitize($alloc['subject_name']); ?>
+          </h4>
+          <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.25rem;">Batch: <strong><?php echo sanitize($alloc['batch_name']); ?></strong></p>
+          <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0;">Class: <?php echo sanitize($alloc['class'] . ' - ' . $alloc['division']); ?></p>
+        </a>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </div>
+</div>
+
 <!-- Workflow Action Cards -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 1.75rem;">
   <a href="<?php echo BASE_URL; ?>modules/practical_management/create_practical.php" class="card" style="text-decoration: none; display: flex; align-items: center; gap: 1rem;">
@@ -77,7 +97,7 @@ if ($alloc_stmt) {
       <i class="fas fa-pen-nib"></i>
     </div>
     <div>
-      <h4 style="font-weight: 700; color: var(--text-primary);">Evaluate Students</h4>
+      <h4 style="font-weight: 700; color: var(--text-primary);">Practical Assessment</h4>
       <p style="font-size: 0.8rem; color: var(--text-secondary);">Multi-Tier (25 Marks)</p>
     </div>
   </a>
@@ -114,7 +134,8 @@ if ($alloc_stmt) {
               <td><span class="badge badge-warning"><i class="fas fa-calendar me-1"></i> Plan Date: <?php echo format_date($p['scheduled_date']); ?></span></td>
               <td>
                 <a href="<?php echo BASE_URL; ?>modules/attendance/mark_attendance.php?practical_id=<?php echo $p['id']; ?>" class="btn btn-secondary btn-sm" title="Mark Attendance"><i class="fas fa-user-check"></i> Attendance</a>
-                <a href="<?php echo BASE_URL; ?>modules/assessment/practical_conduction.php?practical_id=<?php echo $p['id']; ?>" class="btn btn-primary btn-sm" title="Evaluate Marks"><i class="fas fa-pen"></i> Evaluate</a>
+                <a href="<?php echo BASE_URL; ?>modules/assessment/practical_conduction.php?practical_id=<?php echo $p['id']; ?>" class="btn btn-primary btn-sm" title="Practical Assessment"><i class="fas fa-pen"></i> Assess</a>
+                <a href="<?php echo BASE_URL; ?>modules/practical_management/delete_practical.php?id=<?php echo $p['id']; ?>" class="btn btn-danger btn-sm" title="Delete Practical" onclick="return confirm('Are you sure you want to delete this practical? This will also remove any attendance and assessment records linked to it.');"><i class="fas fa-trash"></i> Delete</a>
               </td>
             </tr>
           <?php endforeach; ?>

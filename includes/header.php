@@ -65,7 +65,7 @@ function get_time_greeting() {
 <div class="app-layout">
   <?php include __DIR__ . '/sidebar.php'; ?>
   
-  <div class="main-content">
+  <div class="main-content" id="main-content">
     <?php include __DIR__ . '/navbar.php'; ?>
     
     <main class="content-wrapper">
@@ -76,11 +76,6 @@ function get_time_greeting() {
           <p class="greeting-subtitle">
             Welcome to the <?php echo DEPARTMENT_NAME; ?> &bull; <?php echo get_role_label($user['role'] ?? ''); ?> Portal
           </p>
-        </div>
-        <div>
-          <span class="badge badge-info" style="font-size: 0.85rem; padding: 0.4rem 0.85rem;">
-            <i class="fas fa-calendar-alt me-1"></i> A.Y. <?php echo $_SESSION['academic_year'] ?? DEFAULT_ACADEMIC_YEAR; ?> (<?php echo $_SESSION['class_filter'] ?? 'TY'; ?>)
-          </span>
         </div>
       </div>
 

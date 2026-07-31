@@ -6,11 +6,17 @@ $page_title = "Overall Practical Attendance Report";
 require_once __DIR__ . '/../includes/header.php';
 
 $division = sanitize($_GET['division'] ?? 'Division C');
-$class = $_SESSION['class_filter'] ?? 'TY';
+$class = sanitize($_GET['class'] ?? ($_SESSION['class_filter'] ?? 'TY'));
 
 // Fetch Students in Division
-$st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
-$st_stmt = execute_prepared($conn, $st_sql, "ss", [$class, $division]);
+if ($user['role'] === 'student' || $user['role'] === 'parent') {
+    $st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND id = ?";
+    $st_stmt = execute_prepared($conn, $st_sql, "i", [$user['id']]);
+} else {
+    $st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
+    $st_stmt = execute_prepared($conn, $st_sql, "ss", [$class, $division]);
+}
+
 $students = [];
 if ($st_stmt) {
     $res = mysqli_stmt_get_result($st_stmt);
@@ -39,16 +45,84 @@ if ($att_res) {
         <?php echo COLLEGE_NAME; ?> &bull; <?php echo DEPARTMENT_NAME; ?>
       </p>
     </div>
+    <?php if ($user['role'] !== 'student' && $user['role'] !== 'parent'): ?>
     <form method="GET" action="" style="display: flex; gap: 0.5rem; align-items: center;">
+      <select name="class" class="form-select" style="width: auto;" onchange="this.form.submit()">
+        <?php foreach ($CLASSES as $c): ?>
+          <option value="<?php echo $c; ?>" <?php echo $class === $c ? 'selected' : ''; ?>><?php echo $c; ?></option>
+        <?php endforeach; ?>
+      </select>
       <select name="division" class="form-select" style="width: auto;" onchange="this.form.submit()">
         <option value="Division A" <?php echo $division === 'Division A' ? 'selected' : ''; ?>>Division A</option>
         <option value="Division B" <?php echo $division === 'Division B' ? 'selected' : ''; ?>>Division B</option>
         <option value="Division C" <?php echo $division === 'Division C' ? 'selected' : ''; ?>>Division C</option>
       </select>
     </form>
+    <?php endif; ?>
   </div>
 </div>
 
+<?php if ($user['role'] === 'student' || $user['role'] === 'parent'): ?>
+  <?php
+    $det_sql = "SELECT a.status, p.title, p.exp_no, p.subject_name, p.scheduled_date 
+                FROM attendance a 
+                JOIN practicals p ON a.practical_id = p.id 
+                WHERE a.student_id = ? 
+                ORDER BY p.subject_name ASC, p.exp_no ASC";
+    $det_stmt = execute_prepared($conn, $det_sql, "i", [$user['id']]);
+    $detailed_attendance = [];
+    if ($det_stmt) {
+        $res = mysqli_stmt_get_result($det_stmt);
+        while ($row = mysqli_fetch_assoc($res)) {
+            $detailed_attendance[$row['subject_name']][] = $row;
+        }
+        mysqli_stmt_close($det_stmt);
+    }
+  ?>
+  
+  <?php if (empty($detailed_attendance)): ?>
+    <div class="card p-5 text-center text-muted">
+      No practical attendance records found for you yet.
+    </div>
+  <?php else: ?>
+    <?php foreach ($detailed_attendance as $subject => $records): ?>
+      <div class="card mb-4">
+        <div class="card-header bg-light">
+          <h4 class="card-title m-0 text-primary"><i class="fas fa-book me-2"></i> <?php echo sanitize($subject); ?></h4>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 10%;">Exp #</th>
+                <th style="width: 45%;">Experiment Title</th>
+                <th style="width: 25%;">Scheduled Date</th>
+                <th style="width: 20%;">Attendance Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($records as $rec): ?>
+                <tr>
+                  <td><strong><?php echo sanitize($rec['exp_no']); ?></strong></td>
+                  <td><?php echo sanitize($rec['title']); ?></td>
+                  <td><?php echo date('d M Y', strtotime($rec['scheduled_date'])); ?></td>
+                  <td>
+                    <?php if ($rec['status'] === 'Present'): ?>
+                      <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Present</span>
+                    <?php else: ?>
+                      <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i> Absent</span>
+                    <?php endif; ?>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+
+<?php else: ?>
 <div class="card">
   <div class="table-responsive">
     <table class="table">
@@ -95,5 +169,6 @@ if ($att_res) {
     </table>
   </div>
 </div>
+<?php endif; ?>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

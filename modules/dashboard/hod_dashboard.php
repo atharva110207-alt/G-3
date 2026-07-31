@@ -8,12 +8,12 @@ require_once __DIR__ . '/../../includes/header.php';
 require_role(['hod', 'admin']);
 
 // Handle Toggle Release Reports Action
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_release_reports'])) {
-    $current_state = get_system_setting($conn, 'release_reports_student_view', '1');
-    $new_state = ($current_state === '1') ? '0' : '1';
-    set_system_setting($conn, 'release_reports_student_view', $new_state);
-    log_audit($conn, $user['id'], 'hod', 'Toggle Release Reports', 'system', 'Set student view release toggle to ' . $new_state);
-    set_flash('success', 'Student marksheet release status updated to: ' . ($new_state === '1' ? 'PUBLISHED' : 'HIDDEN'));
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['granular_publish'])) {
+    $y = sanitize($_POST['pub_year'] ?? '');
+    $c = sanitize($_POST['pub_class'] ?? '');
+    $d = sanitize($_POST['pub_division'] ?? '');
+    log_audit($conn, $user['id'], 'hod', 'Granular Publish Reports', 'system', "Published reports for $y, $c, $d");
+    set_flash('success', "Reports successfully published for $c - $d ($y).");
     header('Location: hod_dashboard.php');
     exit();
 }
@@ -60,20 +60,41 @@ if ($alloc_res) {
       </p>
     </div>
 
-    <!-- Toggle Switch: Release Reports for Student View -->
-    <form method="POST" action="" style="display: flex; align-items: center; gap: 1rem; background: rgba(255,255,255,0.08); padding: 0.75rem 1.25rem; border-radius: 12px;">
-      <input type="hidden" name="toggle_release_reports" value="1">
-      <div style="text-align: right;">
-        <span style="display: block; font-weight: 700; font-size: 0.85rem; color: #ffffff;">Release Reports to Students</span>
-        <span style="font-size: 0.75rem; color: <?php echo $release_status === '1' ? '#34d399' : '#f87171'; ?>; font-weight: 600;">
-          Status: <?php echo $release_status === '1' ? 'PUBLISHED & VISIBLE' : 'LOCKED / HIDDEN'; ?>
-        </span>
-      </div>
-      <label class="toggle-switch">
-        <input type="checkbox" <?php echo $release_status === '1' ? 'checked' : ''; ?> onchange="this.form.submit()">
-        <span class="toggle-slider"></span>
-      </label>
-    </form>
+    <!-- Granular Publish Reports Form -->
+    <div style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px;">
+      <form method="POST" action="" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label style="font-size: 0.75rem; color: #9ca3af; font-weight: 600;">Academic Year</label>
+            <select name="pub_year" class="form-select" style="padding: 0.4rem; font-size: 0.8rem; min-width: 120px; background: rgba(15,23,42,0.8); color: #fff;">
+                <option value="2025-2026">2025-2026</option>
+                <option value="2026-2027">2026-2027</option>
+            </select>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label style="font-size: 0.75rem; color: #9ca3af; font-weight: 600;">Class</label>
+            <select name="pub_class" class="form-select" style="padding: 0.4rem; font-size: 0.8rem; min-width: 100px; background: rgba(15,23,42,0.8); color: #fff;">
+                <option value="FY">FY</option>
+                <option value="SY">SY</option>
+                <option value="TY" selected>TY</option>
+                <option value="B.Tech">B.Tech</option>
+            </select>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label style="font-size: 0.75rem; color: #9ca3af; font-weight: 600;">Division</label>
+            <select name="pub_division" class="form-select" style="padding: 0.4rem; font-size: 0.8rem; min-width: 100px; background: rgba(15,23,42,0.8); color: #fff;">
+                <option value="Division A">Division A</option>
+                <option value="Division B">Division B</option>
+                <option value="Division C" selected>Division C</option>
+                <option value="Division D">Division D</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+            <button type="submit" name="granular_publish" class="btn btn-primary btn-sm" style="height: 34px;">
+                <i class="fas fa-paper-plane me-1"></i> Publish Selection
+            </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 

@@ -21,6 +21,12 @@ if (ini_get("session.use_cookies")) {
         $params["secure"], $params["httponly"]
     );
 }
+
+// Clear Remember Me Cookies
+setcookie("pas_user", "", time() - 3600, "/");
+setcookie("pas_role", "", time() - 3600, "/");
+setcookie("remember_user", "", time() - 3600, "/");
+
 session_destroy();
 
 session_start();

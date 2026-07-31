@@ -28,7 +28,7 @@ if (!defined('BASE_URL')) {
 
 // Available Academic Years & Classes
 $ACADEMIC_YEARS = ['2026-2027', '2025-2026'];
-$CLASSES = ['FY', 'SY', 'TY', 'BY'];
+$CLASSES = ['FY', 'SY', 'TY', 'Final Year'];
 
 // Evaluation Criteria Constants & Descriptions (Total: 25 Marks)
 $EVALUATION_CRITERIA = [
@@ -83,6 +83,8 @@ function get_role_label($role) {
             return 'HOD';
         case 'gfm':
             return 'GFM';
+        case 'class_teacher':
+            return 'Class Teacher';
         case 'faculty':
             return 'Subject Faculty';
         case 'student':

@@ -8,6 +8,24 @@ require_once __DIR__ . '/../includes/header.php';
 // Restricted to Admin
 require_role('admin');
 
+// Handle User Deletion
+if (isset($_GET['delete_id'])) {
+    $del_id = intval($_GET['delete_id']);
+    if ($del_id > 0 && $del_id != $user['id']) {
+        $del_sql = "DELETE FROM users WHERE id = ?";
+        $del_stmt = execute_prepared($conn, $del_sql, "i", [$del_id]);
+        if ($del_stmt) {
+            mysqli_stmt_close($del_stmt);
+            log_audit($conn, $user['id'], $user['role'], 'Delete User', 'user_management', 'Deleted user ID #' . $del_id);
+            set_flash('success', 'User account deleted successfully.');
+        } else {
+            set_flash('error', 'Failed to delete user account.');
+        }
+    }
+    header('Location: manage_user.php');
+    exit();
+}
+
 $role_filter = sanitize($_GET['role'] ?? '');
 $search_query = sanitize($_GET['search'] ?? '');
 
@@ -48,7 +66,6 @@ if ($stmt) {
     <h3 class="card-title"><i class="fas fa-users-cog text-primary me-2"></i> User Accounts Registry</h3>
     <div>
       <a href="add_user.php" class="btn btn-primary btn-sm"><i class="fas fa-user-plus me-1"></i> Add New User</a>
-      <a href="create_batches.php" class="btn btn-accent btn-sm ms-2"><i class="fas fa-layer-group me-1"></i> Create Batches</a>
     </div>
   </div>
 
@@ -77,13 +94,12 @@ if ($stmt) {
     <table class="table">
       <thead>
         <tr>
-          <th>#ID</th>
+          <th>ZPRN</th>
           <th>Full Name / Roll No</th>
           <th>Role</th>
           <th>Email</th>
           <th>Password (Plain)</th>
           <th>Class & Div</th>
-          <th>ZPRN</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -97,7 +113,7 @@ if ($stmt) {
         <?php else: ?>
           <?php foreach ($users_list as $u): ?>
             <tr>
-              <td>#<?php echo $u['id']; ?></td>
+              <td><strong style="color: var(--text-primary);"><?php echo sanitize($u['zprn'] ?: '-'); ?></strong></td>
               <td>
                 <strong style="color: var(--text-primary);"><?php echo sanitize($u['full_name']); ?></strong>
                 <?php if (!empty($u['student_roll_no'])): ?>
@@ -116,11 +132,10 @@ if ($stmt) {
               <td><?php echo sanitize($u['email']); ?></td>
               <td><code style="background: rgba(0,0,0,0.3); padding: 0.2rem 0.5rem; border-radius: 4px; color: #38bdf8;"><?php echo sanitize($u['password']); ?></code></td>
               <td><?php echo sanitize(($u['class'] ?? 'TY') . ' - ' . ($u['division'] ?? '-')); ?></td>
-              <td><?php echo sanitize($u['zprn'] ?? '-'); ?></td>
               <td>
                 <a href="edit_user.php?id=<?php echo $u['id']; ?>" class="btn btn-secondary btn-sm" title="Edit User"><i class="fas fa-edit"></i></a>
                 <?php if ($u['id'] != $user['id']): ?>
-                  <a href="delete_user.php?id=<?php echo $u['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete user <?php echo sanitize($u['full_name']); ?>?');" title="Delete User"><i class="fas fa-trash"></i></a>
+                  <a href="manage_user.php?delete_id=<?php echo $u['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete user <?php echo sanitize($u['full_name']); ?>?');" title="Delete User"><i class="fas fa-trash"></i></a>
                 <?php endif; ?>
               </td>
             </tr>

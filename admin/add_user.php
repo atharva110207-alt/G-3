@@ -24,6 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $class = sanitize($_POST['class'] ?? 'TY');
     $division = sanitize($_POST['division'] ?? 'Division C');
 
+    // Dynamic fields for GFM
+    if ($role === 'gfm') {
+        $class = sanitize($_POST['gfm_class'] ?? 'TY');
+        $division = sanitize($_POST['gfm_division'] ?? 'Division C');
+    }
+
     if (empty($role) || empty($email) || empty($password)) {
         $error = "Role, Email, and Password are required fields.";
     } else {
@@ -33,12 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Check duplicate email
-        $check_sql = "SELECT id FROM users WHERE email = ?";
-        $check_stmt = execute_prepared($conn, $check_sql, "s", [$email]);
+        $check_sql = "SELECT id FROM users WHERE email = ? AND role = ?";
+        $check_stmt = execute_prepared($conn, $check_sql, "ss", [$email, $role]);
         if ($check_stmt) {
             $res = mysqli_stmt_get_result($check_stmt);
             if (mysqli_num_rows($res) > 0) {
-                $error = "A user account with this email address already exists.";
+                $error = "A user account with this email address and role already exists.";
             }
             mysqli_stmt_close($check_stmt);
         }
@@ -86,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <option value="admin">System Administrator</option>
         <option value="hod">HOD (Head of Department)</option>
         <option value="gfm">GFM (Guardian Faculty Member)</option>
+        <option value="class_teacher">Class Teacher</option>
         <option value="faculty">Subject Faculty</option>
         <option value="student">Student</option>
         <option value="parent">Parent</option>
@@ -137,6 +144,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     </div>
 
+    <!-- GFM Specific Allocation -->
+    <div id="gfmFieldsGroup" style="display: none;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label for="gfm_class" class="form-label">Assigned Class</label>
+          <select id="gfm_class" name="gfm_class" class="form-select">
+            <option value="FY">FY</option>
+            <option value="SY">SY</option>
+            <option value="TY" selected>TY</option>
+            <option value="BY">BY</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="gfm_division" class="form-label">Assigned Division</label>
+          <select id="gfm_division" name="gfm_division" class="form-select">
+            <option value="Division A">Division A</option>
+            <option value="Division B">Division B</option>
+            <option value="Division C" selected>Division C</option>
+            <option value="Division D">Division D</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
     <!-- Common Login & Contact Fields -->
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
       <div class="form-group">
@@ -165,13 +196,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function toggleRoleFields(role) {
   const staffGroup = document.getElementById('staffFieldsGroup');
   const studentParentGroup = document.getElementById('studentParentFieldsGroup');
+  const gfmGroup = document.getElementById('gfmFieldsGroup');
   
   if (role === 'student' || role === 'parent') {
     studentParentGroup.style.display = 'block';
     staffGroup.style.display = 'block'; // Keep optional name field
+    if(gfmGroup) gfmGroup.style.display = 'none';
+  } else if (role === 'gfm') {
+    studentParentGroup.style.display = 'none';
+    staffGroup.style.display = 'block';
+    if(gfmGroup) gfmGroup.style.display = 'block';
   } else {
     studentParentGroup.style.display = 'none';
     staffGroup.style.display = 'block';
+    if(gfmGroup) gfmGroup.style.display = 'none';
   }
 }
 </script>

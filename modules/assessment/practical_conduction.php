@@ -57,13 +57,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_assessment'])) {
 }
 
 // Fetch Practicals Dropdown
-$pract_sql = "SELECT p.*, b.batch_name FROM practicals p JOIN batches b ON p.batch_id = b.id ORDER BY p.scheduled_date DESC";
-$pract_res = mysqli_query($conn, $pract_sql);
+if ($user['role'] === 'faculty') {
+    $pract_sql = "SELECT p.*, b.batch_name FROM practicals p JOIN batches b ON p.batch_id = b.id WHERE p.faculty_id = ? ORDER BY p.scheduled_date DESC";
+    $pract_stmt = execute_prepared($conn, $pract_sql, "i", [$user['id']]);
+} else {
+    $pract_sql = "SELECT p.*, b.batch_name FROM practicals p JOIN batches b ON p.batch_id = b.id ORDER BY p.scheduled_date DESC";
+    $pract_stmt = execute_prepared($conn, $pract_sql, "", []);
+}
+
 $practicals_opt = [];
-if ($pract_res) {
+if ($pract_stmt) {
+    $pract_res = mysqli_stmt_get_result($pract_stmt);
     while ($pr = mysqli_fetch_assoc($pract_res)) {
         $practicals_opt[] = $pr;
     }
+    mysqli_stmt_close($pract_stmt);
 }
 
 // Selected Practical Details
@@ -120,28 +128,61 @@ if ($practical_id > 0) {
             }
             mysqli_stmt_close($ass_stmt);
         }
+
+        // Fetch Attendance for Regularity Auto-Fill
+        $att_sql = "SELECT student_id, status FROM attendance WHERE practical_id = ?";
+        $att_stmt = execute_prepared($conn, $att_sql, "i", [$practical_id]);
+        $attendance_data = [];
+        if ($att_stmt) {
+            $res = mysqli_stmt_get_result($att_stmt);
+            while ($ar = mysqli_fetch_assoc($res)) {
+                $attendance_data[$ar['student_id']] = $ar['status'];
+            }
+            mysqli_stmt_close($att_stmt);
+        }
     }
 }
 ?>
 
 <div class="card mb-4">
-  <div class="card-header">
-    <h3 class="card-title"><i class="fas fa-pen-nib text-primary me-2"></i> Multi-Tier Practical Rubric Evaluator (Max 25 Marks)</h3>
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+    <h3 class="card-title"><i class="fas fa-pen-nib text-primary me-2"></i> Practical Assessment</h3>
+    <?php if ($selected_pract): ?>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <a href="<?php echo BASE_URL; ?>reports/batch_marksheet_report.php?subject=<?php echo urlencode($selected_pract['subject_name']); ?>&batch_id=<?php echo $selected_pract['batch_id']; ?>" target="_blank" class="btn btn-primary btn-sm">
+            <i class="fas fa-file-alt me-1"></i> Publish Marksheet
+          </a>
+          <a href="<?php echo BASE_URL; ?>reports/defaulter_list.php?subject=<?php echo urlencode($selected_pract['subject_name']); ?>&batch_id=<?php echo $selected_pract['batch_id']; ?>" target="_blank" class="btn btn-danger btn-sm">
+            <i class="fas fa-exclamation-triangle me-1"></i> Generate Defaulter List
+          </a>
+      </div>
+    <?php endif; ?>
   </div>
 
-  <form method="GET" action="" class="action-bar" style="margin-bottom: 0;">
-    <div style="flex: 1;">
-      <label for="practical_id" class="form-label">Select Practical Experiment <span class="text-danger">*</span></label>
-      <select id="practical_id" name="practical_id" class="form-select" onchange="this.form.submit()">
-        <option value="">-- Choose Practical --</option>
+  <div style="padding: 1.5rem;">
+    <h4 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 1rem;">Select Scheduled Practical Experiment <span class="text-danger">*</span></h4>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+      <?php if(empty($practicals_opt)): ?>
+        <div class="alert alert-secondary w-100">No scheduled practical experiments found.</div>
+      <?php else: ?>
         <?php foreach ($practicals_opt as $po): ?>
-          <option value="<?php echo $po['id']; ?>" <?php echo $practical_id == $po['id'] ? 'selected' : ''; ?>>
-            Exp #<?php echo $po['exp_no']; ?>: <?php echo sanitize($po['title']); ?> (Batch <?php echo sanitize($po['batch_name'] . ' - Plan Date: ' . format_date($po['scheduled_date'])); ?>)
-          </option>
+          <a href="?practical_id=<?php echo $po['id']; ?>" class="card" style="text-decoration: none; padding: 1rem; border: 1px solid <?php echo $practical_id == $po['id'] ? 'var(--primary-color)' : 'var(--border-color)'; ?>; background: <?php echo $practical_id == $po['id'] ? 'rgba(99, 102, 241, 0.05)' : 'transparent'; ?>;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <span class="badge badge-info">Exp #<?php echo $po['exp_no']; ?></span>
+              <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fas fa-calendar-alt me-1"></i><?php echo format_date($po['scheduled_date']); ?></span>
+            </div>
+            <h5 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?php echo sanitize($po['title']); ?>">
+              <?php echo sanitize($po['title']); ?>
+            </h5>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0;">
+              Batch: <strong><?php echo sanitize($po['batch_name']); ?></strong> 
+            </p>
+          </a>
         <?php endforeach; ?>
-      </select>
+      <?php endif; ?>
     </div>
-  </form>
+  </div>
 </div>
 
 <?php if ($selected_pract): ?>
@@ -150,10 +191,10 @@ if ($practical_id > 0) {
       <div>
         <h3 class="card-title">
           <i class="fas fa-award text-accent me-2"></i> 
-          Evaluation Rubric: Exp #<?php echo $selected_pract['exp_no']; ?> - <?php echo sanitize($selected_pract['title']); ?>
+          Assessment Form: Exp #<?php echo $selected_pract['exp_no']; ?> - <?php echo sanitize($selected_pract['title']); ?>
         </h3>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
-          Plan Date: <strong><?php echo format_date($selected_pract['scheduled_date']); ?></strong> &bull; Criteria: Regularity (5) + Conduction (10) + Output (5) + Viva (5) = Total (25 Marks)
+          Plan Date: <strong><?php echo format_date($selected_pract['scheduled_date']); ?></strong> &bull; Criteria: Regularity (5) + Performance (10) + Output (5) + Viva (5) = Total (25 Marks)
         </p>
       </div>
     </div>
@@ -169,7 +210,7 @@ if ($practical_id > 0) {
               <th>Roll Number</th>
               <th>Student Name</th>
               <th>Regularity (5)</th>
-              <th>Conduction (10)</th>
+              <th>Performance (10)</th>
               <th>Output (5)</th>
               <th>Viva (5)</th>
               <th>Total (25)</th>
@@ -183,21 +224,23 @@ if ($practical_id > 0) {
               <?php foreach ($students_roster as $st): ?>
                 <?php 
                   $ex = $existing_assessment[$st['id']] ?? null;
-                  $r_val = $ex['regularity_score'] ?? 5;
+                  $status = $attendance_data[$st['id']] ?? 'Absent';
+                  
+                  // Auto-fill Regularity based on Attendance
+                  $r_val = ($status === 'Present') ? 5 : 0;
+                  
                   $c_val = $ex['conduction_score'] ?? 10;
                   $o_val = $ex['output_score'] ?? 5;
                   $v_val = $ex['viva_score'] ?? 5;
-                  $t_val = $ex['total_score'] ?? ($r_val + $c_val + $o_val + $v_val);
+                  $t_val = $r_val + $c_val + $o_val + $v_val;
                 ?>
                 <tr class="eval-row">
                   <td><strong class="badge badge-info" style="font-size: 0.85rem;"><?php echo sanitize($st['student_roll_no']); ?></strong></td>
                   <td><strong style="color: var(--text-primary);"><?php echo sanitize($st['full_name']); ?></strong></td>
                   
                   <td>
-                    <select name="eval[<?php echo $st['id']; ?>][regularity]" class="form-select score-input score-reg" style="width: 70px;" onchange="calculateRowTotal(this)">
-                      <option value="5" <?php echo $r_val == 5 ? 'selected' : ''; ?>>5</option>
-                      <option value="0" <?php echo $r_val == 0 ? 'selected' : ''; ?>>0</option>
-                    </select>
+                    <input type="hidden" name="eval[<?php echo $st['id']; ?>][regularity]" value="<?php echo $r_val; ?>" class="score-reg">
+                    <span class="badge <?php echo $r_val == 5 ? 'badge-success' : 'badge-danger'; ?>" style="font-size: 0.9rem; padding: 0.4rem 0.6rem;"><?php echo $r_val; ?> / 5</span>
                   </td>
 
                   <td>

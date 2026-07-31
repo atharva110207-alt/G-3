@@ -6,16 +6,28 @@ require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../config/auth.php';
 
 require_login();
 
-$division = sanitize($_GET['division'] ?? 'Division C');
-$subject = sanitize($_GET['subject'] ?? 'Microprocessors & Microcontrollers');
-$class = $_SESSION['class_filter'] ?? 'TY';
+$class_filter = sanitize($_GET['class'] ?? ($_SESSION['class_filter'] ?? 'TY'));
+$division_filter = sanitize($_GET['division'] ?? 'Division C');
+$subject_filter = sanitize($_GET['subject'] ?? 'Microprocessors & Microcontrollers');
+$academic_year_filter = sanitize($_GET['academic_year'] ?? DEFAULT_ACADEMIC_YEAR);
+$faculty_filter = sanitize($_GET['faculty_id'] ?? '');
 
 // Fetch Students
-$st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
-$st_stmt = execute_prepared($conn, $st_sql, "ss", [$class, $division]);
+$st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ?";
+$params = [$class_filter, $division_filter];
+$types = "ss";
+
+if ($_SESSION['role'] === 'student') {
+    $st_sql .= " AND student_roll_no = ?";
+    $params[] = $_SESSION['student_roll_no'];
+    $types .= "s";
+}
+$st_sql .= " ORDER BY student_roll_no ASC";
+$st_stmt = execute_prepared($conn, $st_sql, $types, $params);
 $students = [];
 if ($st_stmt) {
     $res = mysqli_stmt_get_result($st_stmt);
@@ -26,26 +38,39 @@ if ($st_stmt) {
 }
 
 // Fetch Experiments
-$exp_sql = "SELECT id, exp_no, title FROM practicals WHERE subject_name = ? AND division = ? ORDER BY exp_no ASC";
-$exp_stmt = execute_prepared($conn, $exp_sql, "ss", [$subject, $division]);
+$exp_sql = "SELECT id, exp_no, title FROM practicals WHERE subject_name = ? AND division = ?";
+$exp_params = [$subject_filter, $division_filter];
+$exp_types = "ss";
+if (!empty($faculty_filter)) {
+    $exp_sql .= " AND faculty_id = ?";
+    $exp_params[] = $faculty_filter;
+    $exp_types .= "i";
+}
+$exp_sql .= " ORDER BY exp_no ASC";
+$exp_stmt = execute_prepared($conn, $exp_sql, $exp_types, $exp_params);
 $experiments = [];
 if ($exp_stmt) {
     $res = mysqli_stmt_get_result($exp_stmt);
+    $unique_experiments = [];
     while ($ex = mysqli_fetch_assoc($res)) {
-        $experiments[] = $ex;
+        if (!isset($unique_experiments[$ex['exp_no']])) {
+            $unique_experiments[$ex['exp_no']] = $ex;
+        }
     }
+    ksort($unique_experiments);
+    $experiments = array_values($unique_experiments);
     mysqli_stmt_close($exp_stmt);
 }
 
 // Fetch Matrix
 $matrix = [];
 if (!empty($experiments)) {
-    $ass_sql = "SELECT a.student_id, a.practical_id, a.total_score FROM assessment a JOIN practicals p ON a.practical_id = p.id WHERE p.subject_name = ?";
-    $ass_stmt = execute_prepared($conn, $ass_sql, "s", [$subject]);
+    $ass_sql = "SELECT a.student_id, a.total_score, p.exp_no FROM assessment a JOIN practicals p ON a.practical_id = p.id WHERE p.subject_name = ?";
+    $ass_stmt = execute_prepared($conn, $ass_sql, "s", [$subject_filter]);
     if ($ass_stmt) {
         $res = mysqli_stmt_get_result($ass_stmt);
         while ($ar = mysqli_fetch_assoc($res)) {
-            $matrix[$ar['student_id']][$ar['practical_id']] = $ar['total_score'];
+            $matrix[$ar['student_id']][$ar['exp_no']] = $ar['total_score'];
         }
         mysqli_stmt_close($ass_stmt);
     }
@@ -79,13 +104,14 @@ if (!empty($experiments)) {
   </div>
 
   <div class="header">
-    <img src="../assets/images/logos/banner.png" alt="Zeal College Banner" class="print-banner">
+    <div style="font-size: 24px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; text-transform: uppercase;">Zeal College of Engineering & Research</div>
+    <div style="font-size: 16px; color: #475569; margin-bottom: 15px;">Department of Electronics & Computer Engineering</div>
     <h3>OFFICIAL TERMWORK MARKSHEET SUMMARY</h3>
   </div>
 
   <div class="meta">
-    <div>Subject: <?php echo sanitize($subject); ?></div>
-    <div>Class & Div: <?php echo sanitize($class . ' ' . $division); ?></div>
+    <div>Subject: <?php echo sanitize($subject_filter); ?></div>
+    <div>Class & Div: <?php echo sanitize($class_filter . ' ' . $division_filter); ?></div>
     <div>Date: <?php echo date('d M Y'); ?></div>
   </div>
 
@@ -115,7 +141,7 @@ if (!empty($experiments)) {
           <td class="center"><?php echo sanitize($st['zprn'] ?: '-'); ?></td>
           <?php foreach ($experiments as $ex): ?>
             <?php 
-              $sc = $matrix[$st_id][$ex['id']] ?? null;
+              $sc = $matrix[$st_id][$ex['exp_no']] ?? null;
               if ($sc !== null) { $row_total += $sc; }
             ?>
             <td class="center"><?php echo $sc !== null ? $sc : '-'; ?></td>

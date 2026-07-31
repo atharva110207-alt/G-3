@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Prevent 'headers already sent' errors globally
 // Practical Assessment System - Session Management & Flash Notifications
 // Zeal College of Engineering & Research
 

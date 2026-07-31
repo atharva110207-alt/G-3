@@ -46,22 +46,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($role) || empty($email) || empty($password)) {
         $error = "Role, Email, and Password are required fields.";
     } else {
-        $update_sql = "UPDATE users SET full_name = ?, email = ?, password = ?, role = ?, student_roll_no = ?, zprn = ?, class = ?, division = ?, phone = ? WHERE id = ?";
-        $up_stmt = execute_prepared($conn, $update_sql, "sssssssssi", [
-            $full_name, $email, $password, $role,
-            (!empty($student_roll_no) ? $student_roll_no : null),
-            (!empty($zprn) ? $zprn : null),
-            $class, $division, $phone, $edit_id
-        ]);
+        // Check duplicate email for the same role
+        $check_sql = "SELECT id FROM users WHERE email = ? AND role = ? AND id != ?";
+        $check_stmt = execute_prepared($conn, $check_sql, "ssi", [$email, $role, $edit_id]);
+        if ($check_stmt) {
+            $res = mysqli_stmt_get_result($check_stmt);
+            if (mysqli_num_rows($res) > 0) {
+                $error = "A user account with this email address and role already exists.";
+            }
+            mysqli_stmt_close($check_stmt);
+        }
 
-        if ($up_stmt) {
-            mysqli_stmt_close($up_stmt);
-            log_audit($conn, $user['id'], $user['role'], 'Edit User', 'user_management', 'Updated user ID #' . $edit_id . ' (' . $email . ')');
-            set_flash('success', 'User account updated successfully!');
-            header('Location: manage_user.php');
-            exit();
-        } else {
-            $error = "Failed to update user in database.";
+        if (empty($error)) {
+            $update_sql = "UPDATE users SET full_name = ?, email = ?, password = ?, role = ?, student_roll_no = ?, zprn = ?, class = ?, division = ?, phone = ? WHERE id = ?";
+            $up_stmt = execute_prepared($conn, $update_sql, "sssssssssi", [
+                $full_name, $email, $password, $role,
+                (!empty($student_roll_no) ? $student_roll_no : null),
+                (!empty($zprn) ? $zprn : null),
+                $class, $division, $phone, $edit_id
+            ]);
+
+            if ($up_stmt) {
+                mysqli_stmt_close($up_stmt);
+                log_audit($conn, $user['id'], $user['role'], 'Edit User', 'user_management', 'Updated user ID #' . $edit_id . ' (' . $email . ')');
+                set_flash('success', 'User account updated successfully!');
+                header('Location: manage_user.php');
+                exit();
+            } else {
+                $error = "Failed to update user account. Ensure fields are not identical or try again.";
+            }
         }
     }
 }
@@ -84,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <option value="admin" <?php echo $target_user['role'] === 'admin' ? 'selected' : ''; ?>>System Administrator</option>
         <option value="hod" <?php echo $target_user['role'] === 'hod' ? 'selected' : ''; ?>>HOD (Head of Department)</option>
         <option value="gfm" <?php echo $target_user['role'] === 'gfm' ? 'selected' : ''; ?>>GFM (Guardian Faculty Member)</option>
+        <option value="class_teacher" <?php echo $target_user['role'] === 'class_teacher' ? 'selected' : ''; ?>>Class Teacher</option>
         <option value="faculty" <?php echo $target_user['role'] === 'faculty' ? 'selected' : ''; ?>>Subject Faculty</option>
         <option value="student" <?php echo $target_user['role'] === 'student' ? 'selected' : ''; ?>>Student</option>
         <option value="parent" <?php echo $target_user['role'] === 'parent' ? 'selected' : ''; ?>>Parent</option>

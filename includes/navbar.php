@@ -16,37 +16,26 @@ $_SESSION['class_filter'] = $selected_class;
 
 <header class="app-navbar">
   <div class="navbar-left">
-    <button class="mobile-sidebar-toggle" id="sidebarToggleBtn" aria-label="Toggle Sidebar">
+    <button id="sidebarToggle" style="background: none; border: none; color: var(--text-primary); font-size: 1.25rem; cursor: pointer; margin-right: 15px;">
       <i class="fas fa-bars"></i>
     </button>
-    <div class="navbar-branding" style="display: flex; align-items: center; gap: 10px;">
-      <img src="<?php echo BASE_URL; ?>assets/images/logos/logo.png" alt="Logo" style="object-fit: contain; width: 45px; height: 45px;">
-      <div>
-        <h1 class="navbar-title"><?php echo APP_NAME; ?></h1>
+    <div class="navbar-branding" style="display: flex; align-items: center; gap: 10px; max-width: 50vw; overflow: hidden;">
+      <div style="flex: 1; min-width: 0; overflow: hidden;">
+        <h1 class="navbar-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; font-size: 1.1rem; line-height: 1.2;">Practical Assessment and Laboratory Performance Management System</h1>
       </div>
     </div>
   </div>
 
-  <div class="navbar-right">
-    <!-- Academic Year Selector -->
-    <div class="selector-group">
-      <label for="navAcademicYear" class="selector-label">A.Y.:</label>
-      <select id="navAcademicYear" class="navbar-selector" onchange="updateGlobalFilter('academic_year', this.value)">
-        <?php foreach ($ACADEMIC_YEARS as $ay): ?>
-          <option value="<?php echo $ay; ?>" <?php echo $selected_academic_year === $ay ? 'selected' : ''; ?>><?php echo $ay; ?></option>
-        <?php endforeach; ?>
-      </select>
+  <?php if (in_array($_SESSION['role'] ?? '', ['faculty', 'hod', 'gfm'])): ?>
+    <div class="navbar-search" style="flex: 1; display: flex; justify-content: center; padding: 0 20px;">
+      <input type="text" id="globalStudentSearch" placeholder="Search Student by ZPRN, Roll No, Name..." style="width: 100%; max-width: 400px; padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-primary);">
     </div>
+  <?php else: ?>
+    <div style="flex: 1;"></div>
+  <?php endif; ?>
 
-    <!-- Class Selector -->
-    <div class="selector-group">
-      <label for="navClassFilter" class="selector-label">Class:</label>
-      <select id="navClassFilter" class="navbar-selector" onchange="updateGlobalFilter('class_filter', this.value)">
-        <?php foreach ($CLASSES as $c): ?>
-          <option value="<?php echo $c; ?>" <?php echo $selected_class === $c ? 'selected' : ''; ?>><?php echo $c; ?></option>
-        <?php endforeach; ?>
-      </select>
-    </div>
+  <div class="navbar-right">
+
 
     <!-- Dark Mode Toggle Button -->
     <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Theme">
@@ -114,17 +103,7 @@ $_SESSION['class_filter'] = $selected_class;
   gap: 1.25rem;
 }
 
-.selector-group {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
 
-.selector-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
 
 .theme-toggle-btn {
   width: 38px;
@@ -199,9 +178,17 @@ $_SESSION['class_filter'] = $selected_class;
 </style>
 
 <script>
-function updateGlobalFilter(key, value) {
-  const url = new URL(window.location.href);
-  url.searchParams.set(key, value);
-  window.location.href = url.toString();
-}
+  document.addEventListener("DOMContentLoaded", () => {
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      const sidebar = document.getElementById('sidebar'); // Ensure your sidebar wrapper has id="sidebar"
+      const mainContent = document.getElementById('main-content'); // Ensure your main content wrapper has this ID
+
+      if(sidebarToggle && sidebar) {
+          sidebarToggle.addEventListener('click', () => {
+              sidebar.classList.toggle('collapsed');
+              if(mainContent) mainContent.classList.toggle('expanded');
+          });
+      }
+  });
 </script>
+

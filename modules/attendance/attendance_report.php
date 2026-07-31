@@ -8,14 +8,24 @@ require_once __DIR__ . '/../../includes/functions.php';
 
 require_login();
 
+$role = $_SESSION['role'];
+$user_id = $_SESSION['user_id'];
+$division = $_GET['division'] ?? 'Division C';
+
 $sql = "SELECT u.student_roll_no, u.full_name, u.division,
         COUNT(a.id) as total_sessions,
         SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) as present_count
         FROM users u 
         LEFT JOIN attendance a ON u.id = a.student_id
-        WHERE u.role = 'student' AND u.division = 'Division C'
-        GROUP BY u.id
-        ORDER BY u.student_roll_no ASC";
+        WHERE u.role = 'student'";
+
+if ($role === 'student') {
+    $sql .= " AND u.id = $user_id";
+} else {
+    $sql .= " AND u.division = '$division'";
+}
+
+$sql .= " GROUP BY u.id ORDER BY u.student_roll_no ASC";
 $result = mysqli_query($conn, $sql);
 
 include __DIR__ . '/../../includes/header.php';

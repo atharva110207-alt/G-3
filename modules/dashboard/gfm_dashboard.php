@@ -7,26 +7,67 @@ require_once __DIR__ . '/../../includes/header.php';
 
 require_role(['gfm', 'admin', 'hod']);
 
-$gfm_division = $user['division'] ?? 'Division C';
-$gfm_class = $_SESSION['class_filter'] ?? 'TY';
-
-// Fetch Students isolated to GFM Division & Class
-$sql = "SELECT id, full_name, email, student_roll_no, zprn, class, division, phone FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
-$stmt = execute_prepared($conn, $sql, "ss", [$gfm_class, $gfm_division]);
+$is_admin_or_hod = ($user['role'] === 'admin' || $user['role'] === 'hod');
 $students = [];
-if ($stmt) {
-    $res = mysqli_stmt_get_result($stmt);
-    while ($row = mysqli_fetch_assoc($res)) {
-        $students[] = $row;
+
+if ($is_admin_or_hod) {
+    $gfm_class = $_SESSION['class_filter'] ?? 'TY';
+    $gfm_division = $user['division'] ?? 'Division C';
+    $batch_name = 'All Batches (Admin View)';
+    
+    $sql = "SELECT id, full_name, email, student_roll_no, zprn, class, division, phone FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
+    $stmt = execute_prepared($conn, $sql, "ss", [$gfm_class, $gfm_division]);
+    if ($stmt) {
+        $res = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($res)) {
+            $students[] = $row;
+        }
+        mysqli_stmt_close($stmt);
     }
-    mysqli_stmt_close($stmt);
+} else {
+    $gfm_id = $user['id'];
+    $b_sql = "SELECT b.id as batch_id, b.batch_name, b.class, b.division 
+              FROM gfm_allocations ga 
+              JOIN batches b ON ga.batch_id = b.id 
+              WHERE ga.gfm_id = ? LIMIT 1";
+    $b_stmt = execute_prepared($conn, $b_sql, "i", [$gfm_id]);
+    $batch_info = null;
+    if ($b_stmt) {
+        $res = mysqli_stmt_get_result($b_stmt);
+        $batch_info = mysqli_fetch_assoc($res);
+        mysqli_stmt_close($b_stmt);
+    }
+
+    if ($batch_info) {
+        $gfm_class = $batch_info['class'];
+        $gfm_division = $batch_info['division'];
+        $batch_name = $batch_info['batch_name'];
+        $batch_id = $batch_info['batch_id'];
+
+        $sql = "SELECT u.id, u.full_name, u.email, u.student_roll_no, u.zprn, u.class, u.division, u.phone 
+                FROM batch_students bs 
+                JOIN users u ON bs.student_id = u.id 
+                WHERE bs.batch_id = ? ORDER BY u.student_roll_no ASC";
+        $stmt = execute_prepared($conn, $sql, "i", [$batch_id]);
+        if ($stmt) {
+            $res = mysqli_stmt_get_result($stmt);
+            while ($row = mysqli_fetch_assoc($res)) {
+                $students[] = $row;
+            }
+            mysqli_stmt_close($stmt);
+        }
+    } else {
+        $gfm_class = 'N/A';
+        $gfm_division = 'N/A';
+        $batch_name = 'Unassigned';
+    }
 }
 ?>
 
 <div class="card mb-4">
   <div class="card-header">
     <div>
-      <h3 class="card-title"><i class="fas fa-users-class text-primary me-2"></i> GFM Division Monitor: <?php echo sanitize($gfm_class . ' - ' . $gfm_division); ?></h3>
+      <h3 class="card-title"><i class="fas fa-users-class text-primary me-2"></i> GFM Monitor: <?php echo sanitize($gfm_class . ' - ' . $gfm_division); ?> (<?php echo sanitize($batch_name); ?>)</h3>
       <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
         Guardian Faculty Member Portal for class student monitoring, attendance overview, and roll number directory.
       </p>
@@ -50,7 +91,7 @@ if ($stmt) {
   <?php if (empty($students)): ?>
     <div class="card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">
       <i class="fas fa-user-slash fa-3x mb-3"></i>
-      <h4>No students found registered for <?php echo sanitize($gfm_class . ' ' . $gfm_division); ?>.</h4>
+      <h4>No students found registered for <?php echo sanitize($batch_name . ' (' . $gfm_class . ' ' . $gfm_division . ')'); ?>.</h4>
     </div>
   <?php else: ?>
     <?php foreach ($students as $st): ?>
