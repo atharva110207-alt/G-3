@@ -31,6 +31,7 @@ session_destroy();
 
 session_start();
 set_flash('info', 'You have been logged out safely.');
-header('Location: ' . BASE_URL . 'modules/authentication/login.php');
+// Final redirect to login page
+header("Location: login.php");
 exit();
 ?>

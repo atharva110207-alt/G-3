@@ -75,7 +75,7 @@ $_SESSION['class_filter'] = $selected_class;
 }
 
 .mobile-sidebar-toggle {
-  display: none;
+  display: block; /* Ensure it's visible on mobile if needed */
   background: none;
   border: none;
   color: var(--text-primary);
@@ -177,18 +177,40 @@ $_SESSION['class_filter'] = $selected_class;
 }
 </style>
 
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      const sidebarToggle = document.getElementById('sidebarToggle');
-      const sidebar = document.getElementById('sidebar'); // Ensure your sidebar wrapper has id="sidebar"
-      const mainContent = document.getElementById('main-content'); // Ensure your main content wrapper has this ID
+<!-- Sidebar Backdrop -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-      if(sidebarToggle && sidebar) {
-          sidebarToggle.addEventListener('click', () => {
-              sidebar.classList.toggle('collapsed');
-              if(mainContent) mainContent.classList.toggle('expanded');
-          });
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('main-content');
+  const backdrop = document.getElementById('sidebarBackdrop');
+
+  if (sidebarToggle && sidebar) {
+    function toggleSidebar() {
+      if (window.innerWidth <= 768) {
+        // Mobile Drawer Logic
+        sidebar.classList.toggle('sidebar-open');
+        if (backdrop) backdrop.classList.toggle('show');
+        document.body.style.overflow = sidebar.classList.contains('sidebar-open') ? 'hidden' : '';
+      } else {
+        // Desktop Collapse Logic
+        sidebar.classList.toggle('collapsed');
+        if(mainContent) mainContent.classList.toggle('expanded');
       }
-  });
+    }
+
+    sidebarToggle.addEventListener('click', toggleSidebar);
+    
+    if (backdrop) {
+      backdrop.addEventListener('click', function() {
+        if (window.innerWidth <= 768 && sidebar.classList.contains('sidebar-open')) {
+          toggleSidebar();
+        }
+      });
+    }
+  }
+});
 </script>
 

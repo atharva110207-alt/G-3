@@ -5,35 +5,97 @@
     flex-direction: column;
   }
   
-  .sidebar {
-    width: 100% !important;
-    height: auto !important;
-    position: relative !important;
-  }
-  
-  .sidebar-menu {
-    display: flex;
-    overflow-x: auto;
-    padding: 0.5rem;
-  }
-
-  .sidebar-link {
-    white-space: nowrap;
-  }
-
   .content-wrapper {
     padding: 1rem;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  /* Sidebar Drawer Mobile Layout */
+  .app-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 280px !important;
+    height: 100vh !important;
+    z-index: 1050;
+    background: var(--bg-sidebar, var(--bg-canvas));
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .app-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  /* Backdrop Overlay */
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 1040;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .sidebar-backdrop.show {
+    display: block;
+    opacity: 1;
+  }
+
+  /* Fix Grid/Flex layouts and Overflow */
+  .main-content {
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .content-wrapper {
+    width: 100%;
+    padding: 16px;
+    margin: 0;
+  }
+
+  /* Touch Target Optimizations */
+  .btn, .sidebar-menu a, .card, .stat-card {
+    min-height: 48px; /* Finger-friendly minimum height */
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
   .card-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
   }
+  
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-wrapper, .search-input {
+    max-width: 100% !important;
+  }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
+  /* Typography Scaling */
+  html {
+    font-size: 14px;
+  }
+
+  /* Navbar Adjustments */
+  .app-navbar {
+    padding: 0 16px !important;
+  }
+
+  .navbar-branding {
+    max-width: 60vw !important;
   }
 }

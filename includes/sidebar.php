@@ -23,7 +23,7 @@ function is_active($page_names) {
 
 <aside class="app-sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <img src="/G-3/assets/images/logos/logo.png" alt="ZEAL Logo" onerror="this.onerror=null; this.src='/G-3/assets/images/logos/Logo.png';" style="object-fit: contain; width: 40px; height: 40px; flex-shrink: 0;">
+    <img src="<?php echo BASE_URL; ?>assets/images/logos/logo.png" alt="ZEAL Logo" onerror="this.onerror=null; this.src='<?php echo BASE_URL; ?>assets/images/logos/Logo.png';" style="object-fit: contain; width: 40px; height: 40px; flex-shrink: 0;">
     <div class="brand-text">
       <span class="brand-title">ZEAL PALPMS</span>
       <span class="brand-sub">ECE Department</span>
