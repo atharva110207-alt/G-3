@@ -49,12 +49,12 @@ function get_time_greeting() {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- Core Custom Stylesheets -->
-  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/style.css">
-  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/dashboard.css">
-  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/assessment.css">
-  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/attendance.css">
-  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/report.css">
-  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/responsive.css">
+  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/style.css?v=<?php echo time(); ?>">
+  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/dashboard.css?v=<?php echo time(); ?>">
+  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/assessment.css?v=<?php echo time(); ?>">
+  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/attendance.css?v=<?php echo time(); ?>">
+  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/report.css?v=<?php echo time(); ?>">
+  <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/responsive.css?v=<?php echo time(); ?>">
 
   <script>
     // Initialize saved theme from localStorage immediately
