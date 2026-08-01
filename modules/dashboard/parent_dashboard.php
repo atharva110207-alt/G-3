@@ -26,7 +26,19 @@ if (!empty($student_roll) && !empty($parent_zprn)) {
     if ($student_info) {
         $student_id = $student_info['id'];
         
-        // Fetch Evaluations
+        // Fetch Published Subjects
+        $published_subjects = [];
+        $pub_sql = "SELECT subject_name FROM published_marksheets WHERE academic_year = ?";
+        $pub_stmt = execute_prepared($conn, $pub_sql, "s", [DEFAULT_ACADEMIC_YEAR]);
+        if ($pub_stmt) {
+            $res = mysqli_stmt_get_result($pub_stmt);
+            while ($row = mysqli_fetch_assoc($res)) {
+                $published_subjects[] = $row['subject_name'];
+            }
+            mysqli_stmt_close($pub_stmt);
+        }
+
+        // Fetch Evaluations (Only for Published Subjects)
         $eval_sql = "SELECT a.*, p.title as exp_title, p.exp_no, p.subject_name 
                     FROM assessment a 
                     JOIN practicals p ON a.practical_id = p.id 
@@ -36,9 +48,29 @@ if (!empty($student_roll) && !empty($parent_zprn)) {
         if ($eval_stmt) {
             $res = mysqli_stmt_get_result($eval_stmt);
             while ($row = mysqli_fetch_assoc($res)) {
-                $my_evaluations[] = $row;
+                // Only show marks if the subject is published
+                if (in_array($row['subject_name'], $published_subjects)) {
+                    $my_evaluations[] = $row;
+                }
             }
             mysqli_stmt_close($eval_stmt);
+        }
+
+        // Subject-wise Attendance
+        $subject_attendance = [];
+        $subj_att_sql = "SELECT p.subject_name, COUNT(a.id) as total, SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) as present 
+                         FROM attendance a 
+                         JOIN practicals p ON a.practical_id = p.id 
+                         WHERE a.student_id = ? 
+                         GROUP BY p.subject_name
+                         ORDER BY p.subject_name ASC";
+        $subj_att_stmt = execute_prepared($conn, $subj_att_sql, "i", [$student_id]);
+        if ($subj_att_stmt) {
+            $res = mysqli_stmt_get_result($subj_att_stmt);
+            while ($row = mysqli_fetch_assoc($res)) {
+                $subject_attendance[] = $row;
+            }
+            mysqli_stmt_close($subj_att_stmt);
         }
 
         // Attendance Percentage
@@ -96,9 +128,45 @@ if (!empty($student_roll) && !empty($parent_zprn)) {
     </div>
   </div>
 
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3 class="card-title"><i class="fas fa-calendar-check text-success me-2"></i> Subject-wise Practical Attendance</h3>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Total Practicals</th>
+            <th>Attended</th>
+            <th>Attendance %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (empty($subject_attendance)): ?>
+            <tr><td colspan="4" class="text-center" style="color: var(--text-muted); padding: 2rem;">No practical attendance recorded yet.</td></tr>
+          <?php else: ?>
+            <?php foreach ($subject_attendance as $att): 
+              $pct = $att['total'] > 0 ? round(($att['present'] / $att['total']) * 100, 1) : 100;
+              $color = $pct >= 75 ? 'var(--status-success-text)' : ($pct >= 50 ? 'var(--status-warning-text)' : 'var(--status-danger-text)');
+            ?>
+              <tr>
+                <td><strong><?php echo sanitize($att['subject_name']); ?></strong></td>
+                <td><?php echo $att['total']; ?></td>
+                <td><?php echo $att['present']; ?></td>
+                <td><strong style="color: <?php echo $color; ?>;"><?php echo $pct; ?>%</strong></td>
+              </tr>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title"><i class="fas fa-list-ol text-primary me-2"></i> Practical Experiment Performance Breakdown</h3>
+      <h3 class="card-title"><i class="fas fa-list-ol text-primary me-2"></i> Practical Experiment Performance Breakdown (Published Only)</h3>
     </div>
 
     <div class="table-responsive">
@@ -117,7 +185,7 @@ if (!empty($student_roll) && !empty($parent_zprn)) {
         </thead>
         <tbody>
           <?php if (empty($my_evaluations)): ?>
-            <tr><td colspan="8" class="text-center" style="color: var(--text-muted); padding: 2rem;">No evaluated practical records for your ward yet.</td></tr>
+            <tr><td colspan="8" class="text-center" style="color: var(--text-muted); padding: 2rem;">No published marksheet records available for your ward at this time.</td></tr>
           <?php else: ?>
             <?php foreach ($my_evaluations as $ev): ?>
               <tr>

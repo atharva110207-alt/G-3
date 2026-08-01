@@ -177,6 +177,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .role-card[data-role="gfm"]:hover, .role-card[data-role="gfm"].selected { border-color: #f97316 !important; box-shadow: 0 0 15px rgba(249, 115, 22, 0.6) !important; }
     .role-card[data-role="student"]:hover, .role-card[data-role="student"].selected { border-color: #06b6d4 !important; box-shadow: 0 0 15px rgba(6, 182, 212, 0.6) !important; }
     .role-card[data-role="parent"]:hover, .role-card[data-role="parent"].selected { border-color: #f43f5e !important; box-shadow: 0 0 15px rgba(244, 63, 94, 0.6) !important; }
+
+    /* Custom Modern Checkbox */
+    .custom-checkbox {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      user-select: none;
+      position: relative;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+    
+    .custom-checkbox input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+    
+    .custom-checkbox .checkmark {
+      height: 20px;
+      width: 20px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    
+    .custom-checkbox:hover input ~ .checkmark {
+      background-color: rgba(255, 255, 255, 0.15);
+      border-color: var(--primary-color);
+    }
+    
+    .custom-checkbox input:checked ~ .checkmark {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+    }
+    
+    .custom-checkbox .checkmark:after {
+      content: "";
+      display: none;
+      width: 5px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    
+    .custom-checkbox input:checked ~ .checkmark:after {
+      display: block;
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0) rotate(45deg); opacity: 0; }
+      100% { transform: scale(1) rotate(45deg); opacity: 1; }
+    }
   </style>
 </head>
 <body class="login-page">
@@ -265,19 +329,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <!-- IDENTITY INPUT FIELD -->
       <div class="form-group">
         <label for="identity" class="form-label"><i class="fas fa-user me-1"></i> Username / Registration No / Email / Mobile</label>
-        <input type="text" id="identity" name="identity" class="form-control" placeholder="e.g. EC1301, 9876543210 or admin@zcoer.edu.in" value="<?php echo sanitize($_POST['identity'] ?? $_POST['email'] ?? ''); ?>" required autofocus>
+        <input type="text" id="identity" name="identity" class="form-control" autocomplete="username" placeholder="e.g. EC1301, 9876543210 or admin@zcoer.edu.in" value="<?php echo sanitize($_POST['identity'] ?? $_POST['email'] ?? ''); ?>" required autofocus>
       </div>
 
       <!-- PASSWORD FIELD -->
       <div class="form-group">
         <label for="password" class="form-label"><i class="fas fa-lock me-1"></i> Password</label>
-        <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required>
+        <input type="password" id="password" name="password" class="form-control" autocomplete="current-password" placeholder="Enter password" required>
       </div>
 
       <!-- Remember Me Checkbox -->
-      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
-        <input type="checkbox" name="remember_me" id="remember_me" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--primary-color);">
-        <label for="remember_me" style="color: var(--text-primary); cursor: pointer; font-size: 0.9rem; user-select: none;">Remember me</label>
+      <div style="margin-bottom: 1.25rem;">
+        <label class="custom-checkbox">
+          <input type="checkbox" name="remember_me" id="remember_me">
+          <span class="checkmark"></span>
+          <span class="checkbox-label">Remember me (stay logged in)</span>
+        </label>
       </div>
 
       <button type="submit" class="login-btn">
