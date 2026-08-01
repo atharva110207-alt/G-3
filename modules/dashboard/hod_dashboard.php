@@ -161,6 +161,9 @@ if ($alloc_res) {
                 <a href="<?php echo BASE_URL; ?>admin/allocations.php?edit_id=<?php echo $al['id']; ?>" class="btn btn-secondary btn-sm">
                   <i class="fas fa-edit me-1"></i> Edit
                 </a>
+                <a href="<?php echo BASE_URL; ?>admin/allocations.php?action=delete&type=faculty&id=<?php echo $al['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this allocation?');">
+                  <i class="fas fa-trash me-1"></i> Delete
+                </a>
               </td>
             </tr>
           <?php endforeach; ?>

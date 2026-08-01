@@ -53,14 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $mail->SMTPAuth   = true;
                         
                         // [PLACEHOLDERS FOR SMTP CREDENTIALS]
-                        $mail->Username   = 'YOUR_GMAIL_ADDRESS@gmail.com'; // e.g. zcoer.practical@gmail.com
-                        $mail->Password   = 'YOUR_GMAIL_APP_PASSWORD';      // 16-character App Password
+                        $mail->Username   = 'zealpas@gmail.com'; // e.g. zcoer.practical@gmail.com
+                        $mail->Password   = 'ghdqkachbeusawgv';      // 16-character App Password
                         
                         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                         $mail->Port       = 587;
                     
                         // Recipients
-                        $mail->setFrom('no-reply@zcoer.edu.in', 'ZCOER Practical Assessment System');
+                        $mail->setFrom('zealpas@gmail.com', 'PALPMS Security');
                         $mail->addAddress($email, $user_db['full_name']);
                     
                         // Content
@@ -70,8 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                        . "Your ZCOER Practical Assessment Portal OTP is: [$otp]. It expires in 10 minutes.\n\n"
                                        . "If you did not request this, please ignore this email.";
                     
-                        // Uncomment below to actually send. Suppressed here to avoid crashing if credentials aren't set.
-                        // $mail->send(); 
+                        // Send OTP
+                        $mail->send(); 
                         
                         // Simulated success since we don't have valid credentials configured yet
                         $_SESSION['reset_email'] = $email;
@@ -104,7 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Forgot Password - <?php echo APP_NAME; ?> | Zeal College</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/style.css">

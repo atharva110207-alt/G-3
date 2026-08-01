@@ -31,7 +31,7 @@ if (!empty($search_query)) {
     $types .= "ssss";
 }
 
-$sql .= " ORDER BY a.timestamp DESC LIMIT 100";
+$sql .= " ORDER BY a.created_at DESC LIMIT 100";
 $stmt = execute_prepared($conn, $sql, $types, $params);
 $logs = [];
 if ($stmt) {

@@ -55,10 +55,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Verify OTP - <?php echo APP_NAME; ?> | Zeal College</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/style.css">
@@ -76,17 +82,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       text-align: center;
       font-size: 1.5rem;
       font-weight: 700;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-color);
       border-radius: 8px;
-      color: #fff;
+      color: var(--text-primary);
       transition: all 0.3s ease;
     }
     .otp-input:focus {
       outline: none;
       border-color: #6366f1;
       box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
-      background: rgba(15, 23, 42, 0.8);
+      background: var(--bg-canvas);
     }
     /* Hide number arrows */
     .otp-input::-webkit-outer-spin-button,
@@ -100,6 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </style>
 </head>
 <body class="login-page">
+  <button id="themeToggle" style="position: absolute; top: 20px; right: 20px; z-index: 9999; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; border: 1px solid var(--text-muted); background: var(--bg-card); color: var(--text-primary);">
+     <i class="fas fa-moon" id="themeIcon"></i>
+  </button>
   <div class="login-split-container">
     <div class="login-split-left">
       <div class="slideshow-container">
@@ -155,6 +164,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 
   <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const toggleBtn = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const currentTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
+
+        // Apply on load
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        if(themeIcon) themeIcon.className = currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+
+        // Toggle Event
+        if(toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                let theme = document.documentElement.getAttribute('data-theme');
+                let newTheme = theme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                themeIcon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            });
+        }
+    });
+
     const inputs = document.querySelectorAll('.otp-input');
 
     inputs.forEach((input, index) => {

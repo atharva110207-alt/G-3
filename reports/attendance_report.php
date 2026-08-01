@@ -7,6 +7,17 @@ require_once __DIR__ . '/../includes/header.php';
 
 $division = sanitize($_GET['division'] ?? 'Division C');
 $class = sanitize($_GET['class'] ?? ($_SESSION['class_filter'] ?? 'TY'));
+$subject_filter = sanitize($_GET['subject'] ?? 'All Subjects');
+
+$subjects = [];
+$subj_sql = "SELECT DISTINCT subject_name FROM syllabi ORDER BY subject_name ASC";
+$subj_res = mysqli_query($conn, $subj_sql);
+if ($subj_res) {
+    while ($r = mysqli_fetch_assoc($subj_res)) {
+        $subjects[] = $r['subject_name'];
+    }
+}
+
 
 // Fetch Students in Division
 if ($user['role'] === 'student' || $user['role'] === 'parent') {
@@ -26,13 +37,28 @@ if ($st_stmt) {
     mysqli_stmt_close($st_stmt);
 }
 
-// Attendance Calculation per Student
 $att_summary = [];
-$att_sql = "SELECT student_id, COUNT(*) as total_conducted, SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present_count FROM attendance GROUP BY student_id";
-$att_res = mysqli_query($conn, $att_sql);
-if ($att_res) {
-    while ($ar = mysqli_fetch_assoc($att_res)) {
-        $att_summary[$ar['student_id']] = $ar;
+if ($subject_filter === 'All Subjects') {
+    $att_sql = "SELECT student_id, COUNT(*) as total_conducted, SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present_count FROM attendance GROUP BY student_id";
+    $att_res = mysqli_query($conn, $att_sql);
+    if ($att_res) {
+        while ($ar = mysqli_fetch_assoc($att_res)) {
+            $att_summary[$ar['student_id']] = $ar;
+        }
+    }
+} else {
+    $att_sql = "SELECT a.student_id, COUNT(*) as total_conducted, SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) as present_count 
+                FROM attendance a 
+                JOIN practicals p ON a.practical_id = p.id 
+                WHERE p.subject_name = ? 
+                GROUP BY a.student_id";
+    $att_stmt = execute_prepared($conn, $att_sql, "s", [$subject_filter]);
+    if ($att_stmt) {
+        $res = mysqli_stmt_get_result($att_stmt);
+        while ($ar = mysqli_fetch_assoc($res)) {
+            $att_summary[$ar['student_id']] = $ar;
+        }
+        mysqli_stmt_close($att_stmt);
     }
 }
 ?>
@@ -46,7 +72,13 @@ if ($att_res) {
       </p>
     </div>
     <?php if ($user['role'] !== 'student' && $user['role'] !== 'parent'): ?>
-    <form method="GET" action="" style="display: flex; gap: 0.5rem; align-items: center;">
+    <form method="GET" action="" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      <select name="subject" class="form-select" style="width: auto;" onchange="this.form.submit()">
+        <option value="All Subjects" <?php echo $subject_filter === 'All Subjects' ? 'selected' : ''; ?>>All Subjects</option>
+        <?php foreach ($subjects as $sub): ?>
+          <option value="<?php echo sanitize($sub); ?>" <?php echo $subject_filter === $sub ? 'selected' : ''; ?>><?php echo sanitize($sub); ?></option>
+        <?php endforeach; ?>
+      </select>
       <select name="class" class="form-select" style="width: auto;" onchange="this.form.submit()">
         <?php foreach ($CLASSES as $c): ?>
           <option value="<?php echo $c; ?>" <?php echo $class === $c ? 'selected' : ''; ?>><?php echo $c; ?></option>

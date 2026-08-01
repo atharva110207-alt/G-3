@@ -16,6 +16,18 @@ $subject_filter = sanitize($_GET['subject'] ?? 'Microprocessors & Microcontrolle
 $academic_year_filter = sanitize($_GET['academic_year'] ?? DEFAULT_ACADEMIC_YEAR);
 $faculty_filter = sanitize($_GET['faculty_id'] ?? '');
 
+// Verify if the marksheet is published before allowing download
+$is_published = false;
+$pub_chk = execute_prepared($conn, "SELECT id FROM published_marksheets WHERE subject_name = ? AND academic_year = ?", "ss", [$subject_filter, $academic_year_filter]);
+if ($pub_chk) {
+    if (mysqli_stmt_get_result($pub_chk)->num_rows > 0) $is_published = true;
+    mysqli_stmt_close($pub_chk);
+}
+
+if (!$is_published) {
+    die("Error: This marksheet is not published yet. You cannot download it.");
+}
+
 // Fetch Students
 $st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ?";
 $params = [$class_filter, $division_filter];

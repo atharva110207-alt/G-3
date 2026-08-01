@@ -68,4 +68,7 @@ function get_flash() {
     }
     return null;
 }
+
+// Global User Variable for Controllers
+$user = get_logged_user();
 ?>

@@ -24,7 +24,7 @@ if (!empty($search_query)) {
             
             // If Student, fetch their batches
             if ($user_db['role'] === 'student') {
-                $b_sql = "SELECT b.batch_name, b.subject_assigned, b.academic_year 
+                $b_sql = "SELECT b.batch_name, b.class, b.division, b.academic_year 
                           FROM batch_students bs 
                           JOIN batches b ON bs.batch_id = b.id 
                           WHERE bs.student_id = ?";

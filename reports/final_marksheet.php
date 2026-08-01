@@ -8,11 +8,11 @@ require_once __DIR__ . '/../includes/header.php';
 // Fetch dynamic dropdown options
 $ay_options = $ACADEMIC_YEARS ?? [DEFAULT_ACADEMIC_YEAR];
 if ($_SESSION['role'] === 'faculty') {
-    $subj_sql = "SELECT DISTINCT fa.subject_name, s.semester FROM faculty_allocations fa LEFT JOIN syllabi s ON fa.subject_name = s.subject_name WHERE fa.faculty_id = ? ORDER BY s.semester ASC, fa.subject_name ASC";
+    $subj_sql = "SELECT DISTINCT fa.subject_name, s.semester FROM faculty_allocations fa INNER JOIN syllabi s ON fa.subject_name = s.subject_name WHERE fa.faculty_id = ? ORDER BY s.semester ASC, fa.subject_name ASC";
     $subj_stmt = execute_prepared($conn, $subj_sql, "i", [$_SESSION['user_id']]);
     $subj_res = $subj_stmt ? mysqli_stmt_get_result($subj_stmt) : false;
 } else {
-    $subj_sql = "SELECT DISTINCT fa.subject_name, s.semester FROM faculty_allocations fa LEFT JOIN syllabi s ON fa.subject_name = s.subject_name ORDER BY s.semester ASC, fa.subject_name ASC";
+    $subj_sql = "SELECT DISTINCT fa.subject_name, s.semester FROM faculty_allocations fa INNER JOIN syllabi s ON fa.subject_name = s.subject_name ORDER BY s.semester ASC, fa.subject_name ASC";
     $subj_res = mysqli_query($conn, $subj_sql);
 }
 $subject_options = [];
@@ -138,12 +138,21 @@ if ($pub_chk) {
         </button>
       </form>
       <?php endif; ?>
-      <a href="<?php echo BASE_URL; ?>reports/export_excel.php?subject=<?php echo urlencode($subject_filter); ?>&division=<?php echo urlencode($division_filter); ?>" class="btn btn-accent btn-sm">
+      <?php if ($is_published): ?>
+      <a href="<?php echo BASE_URL; ?>reports/export_excel.php?subject=<?php echo urlencode($subject_filter); ?>&division=<?php echo urlencode($division_filter); ?>&class=<?php echo urlencode($class_filter); ?>" class="btn btn-accent btn-sm">
         <i class="fas fa-file-excel me-1"></i> Export to Excel (.csv)
       </a>
-      <a href="<?php echo BASE_URL; ?>reports/export_pdf.php?subject=<?php echo urlencode($subject_filter); ?>&division=<?php echo urlencode($division_filter); ?>" target="_blank" class="btn btn-primary btn-sm">
+      <a href="<?php echo BASE_URL; ?>reports/export_pdf.php?subject=<?php echo urlencode($subject_filter); ?>&division=<?php echo urlencode($division_filter); ?>&class=<?php echo urlencode($class_filter); ?>" target="_blank" class="btn btn-primary btn-sm">
         <i class="fas fa-file-pdf me-1"></i> Download PDF
       </a>
+      <?php else: ?>
+      <button class="btn btn-secondary btn-sm" disabled title="Marksheet must be published first" style="cursor: not-allowed; opacity: 0.6;">
+        <i class="fas fa-file-excel me-1"></i> Export to Excel (.csv)
+      </button>
+      <button class="btn btn-secondary btn-sm" disabled title="Marksheet must be published first" style="cursor: not-allowed; opacity: 0.6;">
+        <i class="fas fa-file-pdf me-1"></i> Download PDF
+      </button>
+      <?php endif; ?>
     </div>
   </div>
 

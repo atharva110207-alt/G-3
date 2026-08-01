@@ -78,7 +78,7 @@ if ($can_upload && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete
 if ($user['role'] === 'faculty') {
     $syl_sql = "SELECT s.*, u.full_name as uploader FROM syllabi s JOIN users u ON s.uploaded_by = u.id 
                 WHERE s.subject_name IN (SELECT subject_name FROM faculty_allocations WHERE faculty_id = ?)
-                ORDER BY s.upload_date DESC";
+                ORDER BY s.created_at DESC";
     $syl_stmt = execute_prepared($conn, $syl_sql, "i", [$user['id']]);
     $syllabi_list = [];
     if ($syl_stmt) {
@@ -89,7 +89,7 @@ if ($user['role'] === 'faculty') {
         mysqli_stmt_close($syl_stmt);
     }
 } else {
-    $syl_sql = "SELECT s.*, u.full_name as uploader FROM syllabi s JOIN users u ON s.uploaded_by = u.id ORDER BY s.upload_date DESC";
+    $syl_sql = "SELECT s.*, u.full_name as uploader FROM syllabi s JOIN users u ON s.uploaded_by = u.id ORDER BY s.created_at DESC";
     $syl_res = mysqli_query($conn, $syl_sql);
     $syllabi_list = [];
     if ($syl_res) {
@@ -208,7 +208,7 @@ if ($user['role'] === 'faculty') {
                 <td><strong style="color: var(--text-primary);"><?php echo sanitize($s['subject_name']); ?></strong></td>
                 <td><?php echo sanitize($s['class'] . (!empty($s['semester']) ? ' - ' . $s['semester'] : '')); ?></td>
                 <td><?php echo sanitize($s['uploader']); ?></td>
-                <td><?php echo format_date($s['upload_date']); ?></td>
+                <td><?php echo format_date($s['created_at']); ?></td>
                 <td style="white-space: nowrap;">
                   <a href="<?php echo BASE_URL . sanitize($s['file_path']); ?>" target="_blank" class="btn btn-accent btn-sm me-1">
                     <i class="fas fa-download me-1"></i> View PDF

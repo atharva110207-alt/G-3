@@ -8,17 +8,15 @@ require_once __DIR__ . '/../../includes/header.php';
 require_role(['parent', 'admin', 'hod']);
 
 $student_roll = $user['student_roll_no'] ?? '';
+$parent_zprn = $user['zprn'] ?? '';
 $student_info = null;
 $my_evaluations = [];
 $att_percentage = 100;
 
-if (!empty($student_roll)) {
-    // Sanitize and normalize roll number for DB (strip non-numeric characters)
-    $db_roll_no = preg_replace('/[^0-9]/', '', $student_roll);
-
-    // Fetch Linked Student Record
-    $st_sql = "SELECT id, full_name, email, student_roll_no, zprn, class, division FROM users WHERE student_roll_no = ? AND role = 'student'";
-    $st_stmt = execute_prepared($conn, $st_sql, "s", [$db_roll_no]);
+if (!empty($student_roll) && !empty($parent_zprn)) {
+    // Fetch Linked Student Record based on both Roll Number and ZPRN
+    $st_sql = "SELECT id, full_name, email, student_roll_no, zprn, class, division FROM users WHERE student_roll_no = ? AND zprn = ? AND role = 'student'";
+    $st_stmt = execute_prepared($conn, $st_sql, "ss", [$student_roll, $parent_zprn]);
     if ($st_stmt) {
         $res = mysqli_stmt_get_result($st_stmt);
         $student_info = mysqli_fetch_assoc($res);
@@ -140,7 +138,7 @@ if (!empty($student_roll)) {
   </div>
 <?php else: ?>
   <div class="alert alert-warning">
-    <i class="fas fa-exclamation-triangle me-2"></i> No active student account is currently linked to roll number <strong><?php echo sanitize($student_roll); ?></strong>. Please contact Administrator.
+    <i class="fas fa-exclamation-triangle me-2"></i> No active student account is currently linked to roll number <strong><?php echo sanitize($student_roll); ?></strong> and ZPRN <strong><?php echo sanitize($parent_zprn); ?></strong>. Please contact Administrator.
   </div>
 <?php endif; ?>
 

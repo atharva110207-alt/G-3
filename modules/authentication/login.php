@@ -83,8 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ($user) {
-            // Check plain-text password first, fallback to password_verify if hashed
-            if ($password === $user['password'] || password_verify($password, $user['password'])) {
+            // Check plain-text password directly
+            if ($password === $user['password']) {
                 $is_authorized = false;
                 $active_role = $user['role']; // Default
 
@@ -158,7 +158,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Login - <?php echo APP_NAME; ?> | Zeal College</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -258,8 +260,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
         </div>
 
-        <!-- Sleek Selected Role Banner -->
-        <div id="selectedRoleBanner" class="selected-role-banner"></div>
       </div>
 
       <!-- IDENTITY INPUT FIELD -->
@@ -301,32 +301,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     document.querySelectorAll('.role-card').forEach(card => card.classList.remove('selected'));
     elem.classList.add('selected');
 
-    const banner = document.getElementById('selectedRoleBanner');
-    const roleNames = {
-      'student': 'STUDENT',
-      'faculty': 'SUBJECT FACULTY',
-      'admin': 'SYSTEM ADMINISTRATOR',
-      'hod': 'HEAD OF DEPARTMENT (HOD)',
-      'gfm': 'GUARDIAN FACULTY MEMBER (GFM)',
-      'parent': 'PARENT'
-    };
-
-    const roleColors = {
-      'student': '#3B82F6',
-      'faculty': '#8B5CF6',
-      'admin': '#EF4444',
-      'hod': '#10B981',
-      'gfm': '#F59E0B',
-      'parent': '#06B6D4'
-    };
-
-    if (banner && roleNames[role]) {
-      banner.style.display = 'block';
-      banner.style.color = roleColors[role];
-      banner.style.border = `1px solid ${roleColors[role]}`;
-      banner.style.background = `rgba(15, 23, 42, 0.8)`;
-      banner.innerHTML = `<i class="fas fa-check-circle me-1"></i> SELECTED ROLE: ${roleNames[role]}`;
-    }
   }
 
   // Restore previous selected role if form was reloaded
