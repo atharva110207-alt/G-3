@@ -31,7 +31,10 @@ session_destroy();
 
 session_start();
 set_flash('info', 'You have been logged out safely.');
-// Final redirect to login page
-header("Location: login.php");
+// Build bulletproof absolute redirect URL
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+$absolute_url = $protocol . $_SERVER['HTTP_HOST'] . BASE_URL . 'modules/authentication/login.php';
+
+header("Location: " . $absolute_url);
 exit();
 ?>
