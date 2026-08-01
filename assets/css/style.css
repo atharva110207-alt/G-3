@@ -3,26 +3,35 @@
 
 :root {
   /* Light / Default Theme Color Palette */
-  --bg-primary: #0D1117;          /* Deep Navy Canvas Default */
-  --bg-canvas: #161B22;           /* Card / Canvas Surface */
+  --bg-primary: #0D1117;
+  /* Deep Navy Canvas Default */
+  --bg-canvas: #161B22;
+  /* Card / Canvas Surface */
   --bg-card: #161B22;
-  --bg-sidebar: #f8fafc;        /* Inverted Light Sidebar for Dark Canvas */
-  --sidebar-text: #0f172a;       /* Dark Text for Sidebar */
+  --bg-sidebar: #f8fafc;
+  /* Inverted Light Sidebar for Dark Canvas */
+  --sidebar-text: #0f172a;
+  /* Dark Text for Sidebar */
   --sidebar-text-active: #ffffff;
   --sidebar-hover: #e2e8f0;
-  --sidebar-active-bg: #6366F1;  /* Vibrant Indigo / Neon Accent */
-  
-  --text-primary: #f3f4f6;       /* Bright White / Off-white for Deep Navy */
-  --text-secondary: #9ca3af;     /* Muted Grey */
+  --sidebar-active-bg: #6366F1;
+  /* Vibrant Indigo / Neon Accent */
+
+  --text-primary: #f3f4f6;
+  /* Bright White / Off-white for Deep Navy */
+  --text-secondary: #9ca3af;
+  /* Muted Grey */
   --text-muted: #6b7280;
   --border-color: rgba(255, 255, 255, 0.12);
-  
-  --primary-color: #6366F1;      /* Indigo Primary */
+
+  --primary-color: #6366F1;
+  /* Indigo Primary */
   --primary-hover: #4f46e5;
   --primary-light: rgba(99, 102, 241, 0.15);
-  --accent-color: #38bdf8;       /* Neon Cyan */
+  --accent-color: #38bdf8;
+  /* Neon Cyan */
   --accent-hover: #0284c7;
-  
+
   --status-success-bg: rgba(16, 185, 129, 0.2);
   --status-success-text: #34d399;
   --status-danger-bg: rgba(239, 68, 68, 0.2);
@@ -36,7 +45,7 @@
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.35);
   --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.4);
-  
+
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 24px;
@@ -53,12 +62,12 @@
   --sidebar-text-active: #ffffff;
   --sidebar-hover: #1f2937;
   --sidebar-active-bg: #6366F1;
-  
+
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
   --border-color: #e2e8f0;
-  
+
   --status-success-bg: #dcfce7;
   --status-success-text: #15803d;
   --status-danger-bg: #fee2e2;
@@ -77,20 +86,52 @@
 }
 
 /* --- RESPONSIVE & APPLE OPTIMIZATIONS --- */
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
 
 /* Prevent iOS from overriding input styles (rounded corners/shadows) */
-input:not([type="checkbox"]):not([type="radio"]), select, textarea, button { -webkit-appearance: none; border-radius: 4px; touch-action: manipulation; }
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+button {
+  -webkit-appearance: none;
+  border-radius: 4px;
+  touch-action: manipulation;
+}
 
 /* Custom Scrollbar for Mac and Windows */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-secondary, #f1f5f9); }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary, #f1f5f9);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
 
 /* Universal Table Wrapper for Mobile Overflow */
-.table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 1rem; }
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
 
 body {
   font-family: var(--font-family);
@@ -248,7 +289,80 @@ a:hover {
   gap: 0.625rem;
 }
 
-/* Form Controls with Active Focus Glow */
+/* --- CUSTOM MODERN CHECKBOX --- */
+.custom-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  user-select: none;
+  position: relative;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.custom-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.custom-checkbox .checkmark {
+  height: 20px;
+  width: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.custom-checkbox:hover input~.checkmark {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--primary-color);
+}
+
+.custom-checkbox input:checked~.checkmark {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+}
+
+.custom-checkbox .checkmark:after {
+  content: "";
+  display: none;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+
+.custom-checkbox input:checked~.checkmark:after {
+  display: block;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0) rotate(45deg);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1) rotate(45deg);
+    opacity: 1;
+  }
+}
+
+/* --- FORMS & INPUTS --- */
 .form-group {
   margin-bottom: 1.25rem;
 }
@@ -261,7 +375,8 @@ a:hover {
   margin-bottom: 0.5rem;
 }
 
-.form-control, .form-select {
+.form-control,
+.form-select {
   width: 100%;
   padding: 0.675rem 1rem;
   font-size: 0.875rem;
@@ -274,16 +389,19 @@ a:hover {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-[data-theme="light"] .form-control, [data-theme="light"] .form-select {
+[data-theme="light"] .form-control,
+[data-theme="light"] .form-select {
   background-color: #f1f5f9;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
   border-color: #6366F1 !important;
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.5) !important;
 }
 
-select.form-control option, select.form-select option {
+select.form-control option,
+select.form-select option {
   background-color: var(--bg-card, #1e293b);
   color: var(--text-primary, #ffffff);
 }
@@ -441,7 +559,8 @@ select.form-control option, select.form-select option {
   border: 1px solid var(--status-success-text);
 }
 
-.alert-error, .alert-danger {
+.alert-error,
+.alert-danger {
   background-color: var(--status-danger-bg);
   color: var(--status-danger-text);
   border: 1px solid var(--status-danger-text);

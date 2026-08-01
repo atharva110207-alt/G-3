@@ -1,16 +1,6 @@
 /* Responsive Breakpoints & Mobile Touch Scrolling */
 
 @media (max-width: 992px) {
-  .app-layout {
-    flex-direction: column;
-  }
-  
-  .content-wrapper {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 768px) {
   /* Sidebar Drawer Mobile Layout */
   .app-sidebar {
     position: fixed !important;
@@ -21,7 +11,7 @@
     z-index: 1050;
     background: var(--bg-sidebar, var(--bg-canvas));
     transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--shadow-lg);
   }
 
@@ -31,22 +21,23 @@
 
   /* Backdrop Overlay */
   .sidebar-backdrop {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
     background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 1040;
     opacity: 0;
-    transition: opacity 0.3s ease-in-out;
+    visibility: hidden;
+    transition: all 0.3s ease-in-out;
   }
 
   .sidebar-backdrop.show {
-    display: block;
     opacity: 1;
+    visibility: visible;
   }
 
   /* Fix Grid/Flex layouts and Overflow */
@@ -57,8 +48,25 @@
   
   .content-wrapper {
     width: 100%;
-    padding: 16px;
+    padding: 1rem; /* Reduced padding on mobile */
     margin: 0;
+  }
+
+  /* Header Greeting Adjustments */
+  .header-greeting {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .greeting-title {
+    font-size: 1.25rem;
+  }
+  
+  .greeting-subtitle {
+    font-size: 0.8rem;
   }
 
   /* Touch Target Optimizations */
@@ -92,10 +100,63 @@
 
   /* Navbar Adjustments */
   .app-navbar {
-    padding: 0 16px !important;
+    padding: 0 1rem !important;
+    height: 60px;
+  }
+
+  .navbar-left {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
   }
 
   .navbar-branding {
-    max-width: 60vw !important;
+    max-width: 100% !important;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .navbar-title {
+    font-size: 1rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    max-width: 180px; /* Constrain width to prevent overlapping */
+  }
+
+  .navbar-right {
+    flex-shrink: 0;
+    gap: 0.5rem !important; /* Tighter gap on right side */
+  }
+
+  .navbar-search {
+    display: none !important; /* Hide search bar on mobile headers to save space */
+  }
+
+  .user-info {
+    display: none !important; /* Hide user name/role text on very small screens, just show avatar */
+  }
+
+  /* Remove conflicting flex-column from main layout */
+  .app-layout {
+    flex-direction: row; /* Keep it row, sidebar is position fixed anyway */
+    display: block; /* Fallback to block to let main-content just sit normally */
+  }
+}
+
+@media (max-width: 576px) {
+  /* Extra small screens */
+  .navbar-title {
+    max-width: 140px; 
+  }
+  
+  .content-wrapper {
+    padding: 0.75rem;
+  }
+  
+  .header-greeting {
+    padding: 0.75rem;
   }
 }

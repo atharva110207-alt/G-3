@@ -38,9 +38,10 @@ if ($stmt) {
             $roll = sanitize($st['student_roll_no']);
             $name = sanitize($st['full_name']);
             $id = $st['id'];
-            echo "<label class='student-checkbox-item' style='display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px;'>";
-            echo "<input type='checkbox' name='student_ids[]' value='$id' checked class='form-check-input'>";
-            echo "<span style='font-size: 0.85rem;'><strong>$roll</strong> - $name</span>";
+            echo "<label class='student-checkbox-item custom-checkbox' style='display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px; margin: 0;'>";
+            echo "<input type='checkbox' name='student_ids[]' value='$id' checked>";
+            echo "<span class='checkmark'></span>";
+            echo "<span class='checkbox-label' style='font-size: 0.85rem;'><strong>$roll</strong> - $name</span>";
             echo "</label>";
         }
         echo '</div>';

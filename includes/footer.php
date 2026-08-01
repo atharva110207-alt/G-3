@@ -46,13 +46,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Mobile Sidebar Toggle
-  const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-  const sidebar = document.getElementById('appSidebar');
+  const sidebarToggleBtn = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+  
+  // Create backdrop if it doesn't exist
+  let backdrop = document.querySelector('.sidebar-backdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
+  function toggleSidebar() {
+    sidebar.classList.toggle('sidebar-open');
+    backdrop.classList.toggle('show');
+  }
+
   if (sidebarToggleBtn && sidebar) {
-    sidebarToggleBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('active');
+    sidebarToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleSidebar();
     });
   }
+
+  // Close sidebar when clicking backdrop
+  backdrop.addEventListener('click', toggleSidebar);
 });
 </script>
 </body>

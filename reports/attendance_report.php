@@ -20,9 +20,14 @@ if ($subj_res) {
 
 
 // Fetch Students in Division
-if ($user['role'] === 'student' || $user['role'] === 'parent') {
+if ($user['role'] === 'student') {
     $st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND id = ?";
     $st_stmt = execute_prepared($conn, $st_sql, "i", [$user['id']]);
+} elseif ($user['role'] === 'parent') {
+    $student_roll = $user['student_roll_no'] ?? '';
+    $parent_zprn = $user['zprn'] ?? '';
+    $st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND student_roll_no = ? AND zprn = ?";
+    $st_stmt = execute_prepared($conn, $st_sql, "ss", [$student_roll, $parent_zprn]);
 } else {
     $st_sql = "SELECT id, full_name, student_roll_no, zprn, class, division FROM users WHERE role = 'student' AND class = ? AND division = ? ORDER BY student_roll_no ASC";
     $st_stmt = execute_prepared($conn, $st_sql, "ss", [$class, $division]);
@@ -96,12 +101,14 @@ if ($subject_filter === 'All Subjects') {
 
 <?php if ($user['role'] === 'student' || $user['role'] === 'parent'): ?>
   <?php
+    $target_student_id = !empty($students) ? $students[0]['id'] : 0;
+    
     $det_sql = "SELECT a.status, p.title, p.exp_no, p.subject_name, p.scheduled_date 
                 FROM attendance a 
                 JOIN practicals p ON a.practical_id = p.id 
                 WHERE a.student_id = ? 
                 ORDER BY p.subject_name ASC, p.exp_no ASC";
-    $det_stmt = execute_prepared($conn, $det_sql, "i", [$user['id']]);
+    $det_stmt = execute_prepared($conn, $det_sql, "i", [$target_student_id]);
     $detailed_attendance = [];
     if ($det_stmt) {
         $res = mysqli_stmt_get_result($det_stmt);

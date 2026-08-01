@@ -144,8 +144,11 @@ if ($alloc_stmt) {
             <?php else: ?>
               <?php foreach ($my_allocations as $alloc): ?>
                 <tr class="batch-row" data-subject="<?php echo sanitize($alloc['subject_name']); ?>">
-                  <td class="text-center">
-                    <input type="checkbox" name="batch_select[<?php echo $alloc['batch_id']; ?>]" value="1" class="form-check-input" style="width: 20px; height: 20px; margin-top: 5px;">
+                  <td class="text-center" style="vertical-align: middle;">
+                    <label class="custom-checkbox" style="justify-content: center; margin: 0;">
+                      <input type="checkbox" name="batch_select[<?php echo $alloc['batch_id']; ?>]" value="1" class="form-check-input">
+                      <span class="checkmark"></span>
+                    </label>
                   </td>
                   <td><strong><?php echo sanitize($alloc['batch_name']); ?></strong></td>
                   <td><?php echo sanitize($alloc['class'] . ' - ' . $alloc['division']); ?></td>
