@@ -140,7 +140,7 @@ function is_active($page_names) {
       </a>
     <?php endif; ?>
 
-    <a href="/G-3/modules/authentication/logout.php" class="nav-link text-danger menu-item">
+    <a href="<?php echo BASE_URL; ?>modules/authentication/logout.php" class="nav-link text-danger menu-item">
       <i class="fas fa-sign-out-alt menu-icon"></i>
       <span>Logout</span>
     </a>

@@ -24,18 +24,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (strlen($entered_otp) !== 6 || !is_numeric($entered_otp)) {
         $error = "Please enter a valid 6-digit OTP.";
     } else {
-        $sql = "SELECT id, reset_otp, otp_expires_at FROM users WHERE email = ?";
+        $sql = "SELECT id, reset_otp, (otp_expires_at >= NOW()) as is_valid FROM users WHERE email = ?";
         $stmt = execute_prepared($conn, $sql, "s", [$email]);
         
         if ($stmt) {
             $res = mysqli_stmt_get_result($stmt);
             if ($user_db = mysqli_fetch_assoc($res)) {
                 $db_otp = $user_db['reset_otp'];
-                $expires_at = strtotime($user_db['otp_expires_at']);
-                $now = time();
+                $is_valid = $user_db['is_valid'];
                 
                 if ($db_otp === $entered_otp) {
-                    if ($now <= $expires_at) {
+                    if ($is_valid == 1) {
                         // OTP is valid and not expired
                         $_SESSION['otp_verified'] = true;
                         header("Location: reset_password.php");
@@ -115,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="slideshow-slide fade" style="background-image: url('../../assets/images/background/background.jpeg'); opacity: 1;"></div>
       </div>
       <div class="slideshow-overlay">
-        <img src="<?php echo 'http://' . $_SERVER['HTTP_HOST'] . '/G-3/assets/images/logos/logo.png'; ?>" alt="ZEAL Logo" style="width: 160px; max-width: 100%; height: auto; margin-bottom: 20px;">
+        <img src="../../assets/images/logos/logo.png" alt="ZEAL Logo" style="width: 160px; max-width: 100%; height: auto; margin-bottom: 20px;">
         <h1>ZEAL COLLEGE OF ENGINEERING & RESEARCH</h1>
         <p>Practical Assessment and Laboratory Performance Management System</p>
       </div>

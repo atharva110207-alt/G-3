@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="slideshow-slide fade" style="background-image: url('../../assets/images/background/background.jpeg'); opacity: 1;"></div>
       </div>
       <div class="slideshow-overlay">
-        <img src="<?php echo 'http://' . $_SERVER['HTTP_HOST'] . '/G-3/assets/images/logos/logo.png'; ?>" alt="ZEAL Logo" style="width: 160px; max-width: 100%; height: auto; margin-bottom: 20px;">
+        <img src="../../assets/images/logos/logo.png" alt="ZEAL Logo" style="width: 160px; max-width: 100%; height: auto; margin-bottom: 20px;">
         <h1>ZEAL COLLEGE OF ENGINEERING & RESEARCH</h1>
         <p>Practical Assessment and Laboratory Performance Management System</p>
       </div>

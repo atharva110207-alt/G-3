@@ -1,4 +1,7 @@
 <?php
+// Set default timezone for the application
+date_default_timezone_set('Asia/Kolkata');
+
 // Practical Assessment System - Configuration & Constants
 // Zeal College of Engineering & Research - Department of Electronics & Computer Engineering
 
