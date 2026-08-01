@@ -2,10 +2,22 @@
 // Practical Assessment System - Database Connection & Prepared Statements Helper
 // Zeal College of Engineering & Research
 
-$host = "localhost";
-$username = "root";
-$password = "";
-$database = "practical_assessment_db";
+// Dynamic Environment Detection
+$server_host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+
+if (strpos($server_host, 'localhost') !== false || $server_host === '127.0.0.1') {
+    // Local XAMPP Environment
+    $host = "localhost";
+    $username = "root";
+    $password = "9vMIL1pxjmJ";
+    $database = "practical_assessment_db";
+} else {
+    // Live InfinityFree Environment
+    $host = "sql206.infinityfree.com";
+    $username = "if0_42550038";
+    $password = "9vMIL1pxjmJ"; // Paste your vPanel account password here
+    $database = "if0_42550038_practical_assessment_db";
+}
 
 // Connect to MySQL server
 $conn = mysqli_connect($host, $username, $password);
